@@ -168,6 +168,15 @@ namespace LittleBuildersWorld.EditorTools
             return z;
         }
 
+        /// <summary>A pale striped band on the ground: push debris anywhere into it.</summary>
+        private static ActivityZone ClearStrip(Transform parent, Vector3 centre, Vector2 size)
+        {
+            ActivityZone z = BoxZone("ClearStrip", parent, centre, size, 0f);
+            GameObject band = A.Part("Band", z.transform, A.GroundRect($"ClearStrip_{size.x:0}x{size.y:0}", size.x, size.y, 2f), A.UnlitCutout("ClearStrip", IconPainter.Texture("tex_stripes"), "#FFFFFF"), new Vector3(0f, 0.05f, 0f));
+            A.NoShadows(band);
+            return z;
+        }
+
         private static ActivityMarker Marker(Transform parent, Vector3 focus, VehicleType vehicle, float height = 6.5f)
         {
             var root = new GameObject("Marker_" + vehicle);
@@ -435,18 +444,20 @@ namespace LittleBuildersWorld.EditorTools
             // Stage 0: bulldozer clears rocks, logs and crates into the skip.
             Transform clear = Group("S0_Clear", plot);
             GameObject skip = Instance("Skip", clear, new Vector3(44.5f, 0.03f, 82f), 90f);
-            ActivityZone skipZone = BoxZone("SkipZone", clear, new Vector3(44.5f, 0f, 82f), new Vector2(6.5f, 6f), 90f);
+            // Forgiving target: the whole marked strip along the east side of the plot counts, not just the skip.
+            ActivityZone skipZone = ClearStrip(clear, new Vector3(43.5f, 0f, 82f), new Vector2(7f, 22f));
             var slots = new List<Transform>();
             for (int i = 0; i < 6; i++)
                 slots.Add(A.Pivot("Slot" + i, skip.transform, new Vector3(-1.4f + (i % 3) * 1.4f, 0.4f + (i / 3) * 0.5f, -0.4f + (i % 2) * 0.6f)));
             string[] kinds = { "DebrisRock", "DebrisLog", "DebrisCrate", "DebrisRock", "DebrisLog" };
-            Vector3[] spots = { new Vector3(36f, 0.03f, 78f), new Vector3(30f, 0.03f, 84f), new Vector3(37f, 0.03f, 88f), new Vector3(28f, 0.03f, 78f), new Vector3(33f, 0.03f, 90f) };
+            // Open ground west of every rock, so a bulldozer can always line up and push east.
+            Vector3[] spots = { new Vector3(33f, 0.03f, 76f), new Vector3(34f, 0.03f, 80f), new Vector3(33f, 0.03f, 84f), new Vector3(34f, 0.03f, 88f), new Vector3(33f, 0.03f, 91.5f) };
             var debris = new List<Object>();
             for (int i = 0; i < kinds.Length; i++) debris.Add(Instance(kinds[i], clear, spots[i], i * 47f).GetComponent<PushableDebris>());
             var clearAct = clear.gameObject.AddComponent<BulldozerClearingActivity>();
             E.SetArray(clearAct, "m_Debris", debris.ToArray());
             E.Set(clearAct, "m_Target", skipZone);
-            E.Set(clearAct, "m_BoundsRadius", 24f);
+            E.Set(clearAct, "m_BoundsRadius", 14f); // pushed out of the plot (e.g. through the fence) → pops back home
             E.SetArray(clearAct, "m_ClearSlots", slots.ToArray());
             Transform clearFocus = A.Pivot("Focus", clear, new Vector3(36f, 0f, 84f));
             SetupActivity(clearAct, "house_clear", VehicleType.Bulldozer, clearFocus, Marker(clear, new Vector3(36f, 0f, 84f), VehicleType.Bulldozer));
@@ -578,7 +589,7 @@ namespace LittleBuildersWorld.EditorTools
 
             Transform clear = Group("S0_Clear", works);
             GameObject skip = Instance("Skip", clear, new Vector3(71.5f, 0.03f, 0f), 90f);
-            ActivityZone skipZone = BoxZone("SkipZone", clear, new Vector3(71.5f, 0f, 0f), new Vector2(6.5f, 6f), 90f);
+            ActivityZone skipZone = ClearStrip(clear, new Vector3(70f, 0f, 0f), new Vector2(8f, 26f));
             var slots = new List<Transform>();
             for (int i = 0; i < 3; i++) slots.Add(A.Pivot("Slot" + i, skip.transform, new Vector3(-1.3f + i * 1.3f, 0.4f, 0f)));
             var debris = new List<Object>
@@ -590,7 +601,7 @@ namespace LittleBuildersWorld.EditorTools
             var clearAct = clear.gameObject.AddComponent<BulldozerClearingActivity>();
             E.SetArray(clearAct, "m_Debris", debris.ToArray());
             E.Set(clearAct, "m_Target", skipZone);
-            E.Set(clearAct, "m_BoundsRadius", 26f);
+            E.Set(clearAct, "m_BoundsRadius", 18f);
             E.SetArray(clearAct, "m_ClearSlots", slots.ToArray());
             Transform cf = A.Pivot("Focus", clear, new Vector3(61f, 0f, 0f));
             SetupActivity(clearAct, "road_clear", VehicleType.Bulldozer, cf, Marker(clear, new Vector3(61f, 0f, 0f), VehicleType.Bulldozer));

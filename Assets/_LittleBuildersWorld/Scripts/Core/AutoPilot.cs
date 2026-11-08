@@ -305,7 +305,8 @@ namespace LittleBuildersWorld.Core
             Check(pit.IsOpen && pit.Progress.Progress == 0, "yard dig pit restarts for free play");
         }
 
-        private IEnumerator Push(BulldozerClearingActivity act, Vector3 skip, string label, float budget)
+        /// <summary>Pushes each rock east into the clear-away strip (whose west edge is at <paramref name="stripX"/>).</summary>
+        private IEnumerator Push(BulldozerClearingActivity act, float stripX, float laneX, float approachZ, string label, float budget)
         {
             Vehicle dozer = m_Interaction.Current;
             var debris = new List<PushableDebris>((PushableDebris[])typeof(BulldozerClearingActivity)
@@ -322,27 +323,25 @@ namespace LittleBuildersWorld.Core
                     if (dd < best) { best = dd; next = d; }
                 }
                 if (next == null) break;
-                Vector3 dir = Flatten(next.transform.position - skip);
-                Vector3 behind = next.transform.position + dir * 5f;
-                yield return Drive(dozer, new[] { behind }, 2f, 20f, $"{label}: line up");
-                // Push straight through the rock into the skip.
+                Vector3 p = next.transform.position;
+                // Go round by the open approach row and the empty lane west of the rocks, then face east.
+                yield return Drive(dozer, new[] { new Vector3(stripX - 1f, 0f, approachZ), new Vector3(laneX, 0f, approachZ), new Vector3(laneX, 0f, p.z), new Vector3(p.x - 4.5f, 0f, p.z) }, 1.5f, 25f, $"{label}: line up");
                 float t = 0f;
                 while (!next.IsCleared && t < 15f)
                 {
-                    Vector3 to = Flatten(skip - dozer.transform.position);
+                    Vector3 aim = new Vector3(stripX + 4f, 0f, next.transform.position.z);
+                    Vector3 to = Flatten(aim - dozer.transform.position);
                     float angle = Vector3.SignedAngle(Flatten(dozer.transform.forward), to, Vector3.up);
                     m_Input.SetScriptedInput(new DriveInput(Mathf.Clamp(angle / 30f, -1f, 1f), 0.7f, 0f));
                     t += Time.deltaTime;
                     yield return null;
                 }
                 yield return Stop(dozer);
-                // back off
                 m_Input.SetScriptedInput(new DriveInput(0f, 0f, 1f));
                 yield return Wait(1f);
                 yield return Stop(dozer);
             }
-            Check(act.Progress.IsComplete, $"{label}: all debris pushed into the skip");
-            // Back away from the skip so the area is clear for the next machine.
+            Check(act.Progress.IsComplete, $"{label}: all debris pushed into the clear-away strip ({act.Progress.Progress + (act.Progress.IsComplete ? debris.Count : 0)}/{debris.Count})");
             m_Input.SetScriptedInput(new DriveInput(0f, 0f, 1f));
             yield return Wait(1.5f);
             yield return Stop(dozer);
@@ -359,7 +358,7 @@ namespace LittleBuildersWorld.Core
             yield return Shot("07_house_plot_arrival");
             var clear = Find<BulldozerClearingActivity>("house_clear");
             Check(clear.IsOpen, "plot clearing is the open stage");
-            yield return Push(clear, new Vector3(44.5f, 0, 82f), "house clearing", 240f);
+            yield return Push(clear, 40f, 26f, 72.5f, "house clearing", 300f);
             yield return Shot("08_plot_cleared");
         }
 
@@ -423,8 +422,8 @@ namespace LittleBuildersWorld.Core
             var works = Find<RoadworksActivity>("roadworks");
             yield return Enter(VehicleType.Bulldozer);
             Vehicle dozer = m_Interaction.Current;
-            yield return Drive(dozer, new[] { new Vector3(34f, 0, 66f), new Vector3(52f, 0, 60f), new Vector3(60f, 0, 48f), new Vector3(60f, 0, 20f) }, 3f, 30f, "bulldozer to roadworks");
-            yield return Push(Find<BulldozerClearingActivity>("road_clear"), new Vector3(71.5f, 0, 0f), "roadworks clearing", 180f);
+            yield return Drive(dozer, new[] { new Vector3(44f, 0, 73f), new Vector3(40f, 0, 66f), new Vector3(52f, 0, 60f), new Vector3(60f, 0, 48f), new Vector3(60f, 0, 20f) }, 3f, 30f, "bulldozer to roadworks");
+            yield return Push(Find<BulldozerClearingActivity>("road_clear"), 66f, 50f, 14f, "roadworks clearing", 240f);
             yield return Shot("13_road_cleared");
 
             yield return Enter(VehicleType.DumpTruck);

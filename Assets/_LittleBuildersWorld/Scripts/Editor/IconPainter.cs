@@ -82,6 +82,7 @@ namespace LittleBuildersWorld.EditorTools
             ConfigureTexture($"{TextureFolder}/tex_road.png", true);
             ConfigureTexture($"{TextureFolder}/tex_road_plain.png", true);
             ConfigureTexture($"{TextureFolder}/tex_track.png", true);
+            ConfigureTexture($"{TextureFolder}/tex_stripes.png", true);
             ConfigureTexture($"{TextureFolder}/tex_dirt.png", true);
         }
 
@@ -320,6 +321,12 @@ namespace LittleBuildersWorld.EditorTools
             Write($"{TextureFolder}/tex_road.png", AddNoise(road, 0.025f, rng));
             var plain = new Canvas2D(128, 256, E.Hex("#5C616D"));
             Write($"{TextureFolder}/tex_road_plain.png", AddNoise(plain, 0.025f, rng));
+
+            // Clear-away strip: soft yellow/white diagonal stripes (alpha-clipped edges are not needed).
+            var stripes = new Canvas2D(64, 64, E.Hex("#FFF1B8"));
+            stripes.Fill(Shape.Polygon(new Vector2(0, 0), new Vector2(32, 0), new Vector2(64, 32), new Vector2(64, 64), new Vector2(0, 0)), E.Hex("#FFD447"));
+            stripes.Fill(Shape.Polygon(new Vector2(0, 32), new Vector2(32, 64), new Vector2(0, 64)), E.Hex("#FFD447"));
+            Write($"{TextureFolder}/tex_stripes.png", stripes.ToPng());
 
             // Tracks: dark rubber with lighter cleats every 1/8 of the texture.
             var track = new Canvas2D(64, 256, E.Hex("#3D3B4F"));

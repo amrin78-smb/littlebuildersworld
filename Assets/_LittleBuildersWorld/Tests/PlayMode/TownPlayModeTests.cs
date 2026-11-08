@@ -93,6 +93,7 @@ namespace LittleBuildersWorld.Tests
             float t = 0f;
             while (arm.IsBusy && t < 5f) { t += Time.deltaTime; yield return null; }
             Assert.IsTrue(arm.HasSoil);
+            yield return null; // the button re-evaluates once per frame
             Assert.AreEqual(ActionIcon.Dump, actions.Current.Icon, "one action at a time: now Dump");
             interaction.Exit();
             Assert.IsTrue(arm.HasSoil, "leaving keeps the load; nothing is lost");
