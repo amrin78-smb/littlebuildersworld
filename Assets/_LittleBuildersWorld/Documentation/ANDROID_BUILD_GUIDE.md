@@ -33,7 +33,7 @@ silently drift:
 | Orientation | Landscape left/right only | |
 | Min SDK | 25 (Android 7.1) | Unity 6 minimum is 23; 25 matches the owner's other games |
 | Target SDK | highest installed | |
-| Internet permission | not forced | no network use; development builds add it for the profiler |
+| Internet permission | **removed from release builds** (`AndroidManifestPostProcess`) | offline children's game; development builds keep it for the profiler |
 | Format | APK (not AAB) | sideloading for testing |
 
 ### What `verify_apk.sh` checks
@@ -41,6 +41,7 @@ silently drift:
 1. `aapt dump badging` → `native-code: 'arm64-v8a' 'armeabi-v7a'` (both required).
 2. `.*PowerVR.*` is present in the files under `assets/bin/Data/` (`globalgamemanagers` or a `.splitN` part).
 3. Landscape orientation in the manifest.
+4. Release APKs must not request `android.permission.INTERNET`.
 
 ## Install and test on a phone
 

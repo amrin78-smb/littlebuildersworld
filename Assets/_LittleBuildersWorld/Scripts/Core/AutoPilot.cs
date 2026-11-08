@@ -279,7 +279,7 @@ namespace LittleBuildersWorld.Core
             Log("--- Yard dig pit: excavator loads the dump truck");
             var pit = Find<ExcavationActivity>("yard_dig");
             yield return Enter(VehicleType.DumpTruck);
-            yield return Drive(m_Interaction.Current, new[] { new Vector3(-9f, 0, 2f), new Vector3(-7f, 0, -5f) }, 2.5f, 25f, "truck to dig pit");
+            yield return Drive(m_Interaction.Current, new[] { new Vector3(-9f, 0, 2f), new Vector3(-9f, 0, -4f) }, 2f, 25f, "truck to dig pit");
             yield return Enter(VehicleType.Excavator);
             Vehicle exc = m_Interaction.Current;
             yield return Drive(exc, new[] { new Vector3(-15f, 0, 2f), new Vector3(-14f, 0, -3f) }, 2.5f, 25f, "excavator to dig pit");
@@ -425,6 +425,7 @@ namespace LittleBuildersWorld.Core
             yield return Drive(dozer, new[] { new Vector3(44f, 0, 73f), new Vector3(40f, 0, 66f), new Vector3(52f, 0, 60f), new Vector3(60f, 0, 48f), new Vector3(60f, 0, 20f) }, 3f, 30f, "bulldozer to roadworks");
             yield return Push(Find<BulldozerClearingActivity>("road_clear"), 66f, 50f, 14f, "roadworks clearing", 240f);
             yield return Shot("13_road_cleared");
+            dozer.ReturnHome(); // selector feature: send the bulldozer back to its bay so the road is clear
 
             yield return Enter(VehicleType.DumpTruck);
             Vehicle truck = m_Interaction.Current;
@@ -435,6 +436,8 @@ namespace LittleBuildersWorld.Core
             yield return Act(ActionIcon.Unload, "unload gravel into the holes");
             yield return Wait(2f);
             Check(works.Progress.Stage == 2, "holes filled; rolling is open");
+            m_Interaction.Exit();
+            truck.ReturnHome();
 
             yield return Enter(VehicleType.RoadRoller);
             Vehicle roller = m_Interaction.Current;

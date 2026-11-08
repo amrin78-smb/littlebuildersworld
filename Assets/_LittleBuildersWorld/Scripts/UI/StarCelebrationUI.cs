@@ -140,7 +140,7 @@ namespace LittleBuildersWorld.UI
                     if (m_UnlockSwatch != null) m_UnlockSwatch.color = u.colour;
                     m_UnlockCard.SetActive(true);
                     m_UnlockCard.transform.localScale = Vector3.zero;
-                    Tween.Scale(m_UnlockCard.transform, Vector3.one, 0.45f, Ease.OutBack);
+                    Tween.Scale(m_UnlockCard.transform, Vector3.one * 0.7f, 0.45f, Ease.OutBack);
                     GameServices.Instance?.Audio.Play(SfxId.Unlock);
                     yield return new WaitForSecondsRealtime(3f);
                     Tween.Scale(m_UnlockCard.transform, Vector3.zero, 0.3f, Ease.InBack);

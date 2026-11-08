@@ -125,7 +125,8 @@ namespace LittleBuildersWorld.EditorTools
                 A.Part("Post", r.transform, A.Box(0.22f, 1.2f, 0.22f, 0.08f), A.White, new Vector3(-2f + i * 2f, 0.6f, 0f));
             A.Part("Rail", r.transform, A.Box(4.2f, 0.18f, 0.1f, 0.05f), A.White, new Vector3(0f, 0.85f, 0f));
             A.Part("Rail2", r.transform, A.Box(4.2f, 0.18f, 0.1f, 0.05f), A.White, new Vector3(0f, 0.45f, 0f));
-            BoxCol(r, new Vector3(0f, 0.6f, 0f), new Vector3(4.2f, 1.2f, 0.4f));
+            // Taller than it looks: an invisible wall vehicles slide along and can never ride up onto.
+            BoxCol(r, new Vector3(0f, 1.5f, 0f), new Vector3(4.2f, 3f, 0.5f));
             return r;
         }
 
@@ -244,7 +245,7 @@ namespace LittleBuildersWorld.EditorTools
             A.Part("Water", r.transform, A.Disc(1.9f, 0.1f, 0.05f, 28), A.Colour("Water", "#5FC9F8", 0.8f), new Vector3(0f, 0.62f, 0f));
             A.Part("Column", r.transform, A.Disc(0.3f, 1.6f, 0.1f, 14), A.Concrete, Vector3.zero);
             A.Part("Top", r.transform, A.Dome(0.9f, 0.5f), A.Colour("Water", "#5FC9F8", 0.8f), new Vector3(0f, 1.6f, 0f));
-            BoxCol(r, new Vector3(0f, 0.6f, 0f), new Vector3(4.4f, 1.2f, 4.4f));
+            BoxCol(r, new Vector3(0f, 1.5f, 0f), new Vector3(4.4f, 3f, 4.4f));
             return r;
         }
 

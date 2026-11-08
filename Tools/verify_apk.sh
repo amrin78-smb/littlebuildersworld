@@ -19,4 +19,8 @@ if grep -rlaF ".*PowerVR.*" "$TMP/assets/bin/Data/" >/dev/null 2>&1; then
 else echo "FAIL PowerVR filter not found under assets/bin/Data"; fail=1; fi
 rm -rf "$TMP"
 "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -q 'screenOrientation.*=(type 0x10)0x6\|screenOrientation.*0xb' && echo "OK   landscape orientation" || echo "INFO orientation: $("$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -m1 screenOrientation)"
+if echo "$BADGING" | grep -q "android.permission.INTERNET"; then
+  case "$APK" in *-dev.apk) echo "INFO INTERNET permission present (development build: used by the Unity profiler)";;
+                 *) echo "FAIL release APK must not request INTERNET (offline children's game)"; fail=1;; esac
+else echo "OK   no INTERNET permission"; fi
 exit $fail

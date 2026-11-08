@@ -80,7 +80,7 @@ namespace LittleBuildersWorld.EditorTools
 
             // Guidance arrow: a flat, slightly tilted arrow floating beside the vehicle.
             Transform arrowRoot = new GameObject("GuidanceArrow").transform;
-            Transform arrowTilt = A.Pivot("Tilt", arrowRoot, Vector3.zero, new Vector3(-20f, 0f, 0f));
+            Transform arrowTilt = A.Pivot("Tilt", arrowRoot, Vector3.zero, new Vector3(-50f, 0f, 0f)); // tilted toward the camera so it reads as an arrow
             GameObject arrowOutline = A.Part("Outline", arrowTilt, A.Quad(2.6f, 2.6f), A.UnlitCutout("ArrowOutline", IconPainter.Sprite("icon_arrow3d").texture, "#3A2E2A"), new Vector3(0f, -0.01f, 0f));
             GameObject arrowFill = A.Part("Fill", arrowTilt, A.Quad(2.2f, 2.2f), A.UnlitCutout("ArrowFill", IconPainter.Sprite("icon_arrow3d").texture, "#FFD447"), Vector3.zero);
             A.NoShadows(arrowRoot.gameObject);
