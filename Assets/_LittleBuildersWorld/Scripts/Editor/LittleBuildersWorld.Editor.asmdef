@@ -1,0 +1,14 @@
+{
+    "name": "LittleBuildersWorld.Editor",
+    "rootNamespace": "LittleBuildersWorld.EditorTools",
+    "references": [
+        "LittleBuildersWorld.Runtime",
+        "Unity.InputSystem",
+        "Unity.TextMeshPro",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": ["Editor"],
+    "excludePlatforms": [],
+    "autoReferenced": true
+}
