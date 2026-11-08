@@ -296,7 +296,8 @@ namespace LittleBuildersWorld.EditorTools
             c.S("WallR", bed, A.Box(0.16f, 0.9f, 3.5f, 0.06f), new Vector3(1.12f, 0.55f, 1.75f));
             c.S("WallFront", bed, A.Box(2.4f, 1.25f, 0.18f, 0.06f), new Vector3(0f, 0.72f, 3.42f));
             c.S("Tailgate", bed, A.Box(2.4f, 0.7f, 0.15f, 0.06f), new Vector3(0f, 0.45f, 0.08f));
-            A.Part("Stripe", bed, A.Box(2.45f, 0.12f, 3.52f, 0.04f), A.White, new Vector3(0f, 0.85f, 1.75f));
+            foreach (float x in new[] { -1.21f, 1.21f })
+                A.Part("Stripe", bed, A.Box(0.04f, 0.14f, 3.3f, 0.02f), A.White, new Vector3(x, 0.75f, 1.75f));
 
             GameObject soilLoad = A.Part("Load_Soil", bed, A.Dome(1.0f, 0.85f), A.Soil, new Vector3(0f, 0.18f, 1.75f), null, new Vector3(1.05f, 1f, 1.55f));
             GameObject gravelLoad = A.Part("Load_Gravel", bed, A.Dome(1.0f, 0.75f), A.Gravel, new Vector3(0f, 0.18f, 1.75f), null, new Vector3(1.05f, 1f, 1.55f));

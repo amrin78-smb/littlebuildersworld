@@ -41,7 +41,7 @@ namespace LittleBuildersWorld.Activities
                     GameServices.Instance?.Audio.Play(SfxId.Thud);
                     AddProgress(1, p);
                 }
-                else if ((p - transform.position).sqrMagnitude > m_BoundsRadius * m_BoundsRadius || p.y < -2f)
+                else if ((p - FocusPosition).sqrMagnitude > m_BoundsRadius * m_BoundsRadius || p.y < -2f)
                 {
                     d.ResetHome(true);
                     GameServices.Instance?.Audio.Play(SfxId.Pop);

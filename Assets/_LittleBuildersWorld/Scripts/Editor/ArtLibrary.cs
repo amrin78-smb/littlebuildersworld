@@ -328,8 +328,8 @@ namespace LittleBuildersWorld.EditorTools
             for (int i = 0; i < path.Count - 1; i++)
             {
                 int a = i * 2;
-                belt.Add(a); belt.Add(a + 2); belt.Add(a + 1);
-                belt.Add(a + 1); belt.Add(a + 2); belt.Add(a + 3);
+                belt.Add(a); belt.Add(a + 1); belt.Add(a + 2);
+                belt.Add(a + 1); belt.Add(a + 3); belt.Add(a + 2);
             }
             foreach (float side in new[] { -1f, 1f })
             {

@@ -69,7 +69,6 @@ namespace LittleBuildersWorld.EditorTools
                 go.transform.SetPositionAndRotation(v.p, Quaternion.Euler(0f, v.yaw, 0f));
             }
             Place("SoilMound", env, new Vector3(-2f, 0f, 8f), 0f, 1.2f);
-            Place("Hopper", env, new Vector3(8f, 0f, 11f), 20f, 1f);
             foreach (Vector3 p in new[] { new Vector3(-10f, 0, -3f), new Vector3(10.5f, 0, -2f), new Vector3(0f, 0, -6f), new Vector3(-4f, 0, -5f) })
                 Place("DebrisCone", env, p, 0f, 1f).GetComponent<PushableDebris>().enabled = false;
             foreach (Vector3 p in new[] { new Vector3(-12f, 0, 6f), new Vector3(12f, 0, 7f) }) Place("FlagPole", env, p, 0f, 1f);

@@ -120,11 +120,12 @@ namespace LittleBuildersWorld.Input
 
         public void ReleaseAll()
         {
-            m_Left?.Release();
-            m_Right?.Release();
-            m_Go?.Release();
-            m_Back?.Release();
-            m_Joystick?.Release();
+            // Unity null checks (not ?.): during scene unload the buttons may already be destroyed.
+            if (m_Left != null) m_Left.Release();
+            if (m_Right != null) m_Right.Release();
+            if (m_Go != null) m_Go.Release();
+            if (m_Back != null) m_Back.Release();
+            if (m_Joystick != null) m_Joystick.Release();
         }
 
         private void OnApplicationPause(bool paused)
