@@ -63,7 +63,7 @@ namespace LittleBuildersWorld.Vehicles
                     Renderer r = m_TrackRenderers[i];
                     if (r == null) continue;
                     r.GetPropertyBlock(m_Block);
-                    m_Block.SetVector(BaseMapSt, new Vector4(1f, 4f, 0f, -m_TrackOffset));
+                    m_Block.SetVector(BaseMapSt, new Vector4(1f, 1f, 0f, m_TrackOffset));
                     r.SetPropertyBlock(m_Block);
                 }
             }

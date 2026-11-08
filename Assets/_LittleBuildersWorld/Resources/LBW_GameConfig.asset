@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e0c575787ac9066eaf3e442a071fc92, type: 3}
+  m_Name: LBW_GameConfig
+  m_EditorClassIdentifier: LittleBuildersWorld.Runtime::LittleBuildersWorld.Core.GameConfig
+  vehicles:
+  - {fileID: 11400000, guid: dd6cc28371bce9d31aef77ded7229466, type: 2}
+  - {fileID: 11400000, guid: 4ae07ae8d45b5aaef85e157a82eed178, type: 2}
+  - {fileID: 11400000, guid: b071723f061556bf39cea26aaf39aafe, type: 2}
+  - {fileID: 11400000, guid: 6d3e516d0ddf402268cb05691a910e34, type: 2}
+  unlocks:
+  - id: paint_sunny
+    kind: 0
+    starsRequired: 2
+    icon: {fileID: 21300000, guid: 19fc2cb0182ed385fa25a8c0e0121457, type: 3}
+    colour: {r: 1, g: 0.83137256, b: 0.2784314, a: 1}
+  - id: decor_flags
+    kind: 1
+    starsRequired: 4
+    icon: {fileID: 21300000, guid: 7d645c7d70177f22784fa7ed110204f9, type: 3}
+    colour: {r: 1, g: 0.34901962, b: 0.36862746, a: 1}
+  - id: paint_ocean
+    kind: 0
+    starsRequired: 7
+    icon: {fileID: 21300000, guid: 19fc2cb0182ed385fa25a8c0e0121457, type: 3}
+    colour: {r: 0.30588236, g: 0.65882355, b: 0.87058824, a: 1}
+  - id: decor_balloons
+    kind: 1
+    starsRequired: 10
+    icon: {fileID: 21300000, guid: 5bcf5fa49723b9e948b87695202f5498, type: 3}
+    colour: {r: 1, g: 0.7882353, b: 0.23529412, a: 1}
+  - id: paint_candy
+    kind: 0
+    starsRequired: 14
+    icon: {fileID: 21300000, guid: 19fc2cb0182ed385fa25a8c0e0121457, type: 3}
+    colour: {r: 1, g: 0.56078434, b: 0.78039217, a: 1}
+  paints:
+  - id: factory
+    unlockId: 
+    primary: {r: 1, g: 1, b: 1, a: 1}
+    secondary: {r: 1, g: 1, b: 1, a: 1}
+    swatch: {fileID: 0}
+  - id: sunny
+    unlockId: paint_sunny
+    primary: {r: 1, g: 0.83137256, b: 0.2784314, a: 1}
+    secondary: {r: 1, g: 1, b: 1, a: 1}
+    swatch: {fileID: 0}
+  - id: ocean
+    unlockId: paint_ocean
+    primary: {r: 0.30588236, g: 0.65882355, b: 0.87058824, a: 1}
+    secondary: {r: 0.60784316, g: 0.9647059, b: 1, a: 1}
+    swatch: {fileID: 0}
+  - id: candy
+    unlockId: paint_candy
+    primary: {r: 1, g: 0.56078434, b: 0.78039217, a: 1}
+    secondary: {r: 0.7019608, g: 0.53333336, b: 0.92156863, a: 1}
+    swatch: {fileID: 0}
+  audio: {fileID: 11400000, guid: 8f2c77c17d19824f5a4a55aa802ae610, type: 2}
+  iconScoop: {fileID: 21300000, guid: a51c7c6303f657611841e31f3c69e044, type: 3}
+  iconDump: {fileID: 21300000, guid: 45993b104180b50daa456d0afaa16efe, type: 3}
+  iconLoad: {fileID: 21300000, guid: 51f6f26f7ad1f5fd9adc9f19306d4e7a, type: 3}
+  iconUnload: {fileID: 21300000, guid: c2a8ed351586a404c94034671f6b84fc, type: 3}
+  iconStar: {fileID: 21300000, guid: 225d0a6d9672cb2ff93a32b2ba657038, type: 3}
+  targetFrameRate: 60

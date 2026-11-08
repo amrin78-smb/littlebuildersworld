@@ -1,0 +1,69 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abbe1d47a6528a4b8af69d048b5fdbb4, type: 3}
+  m_Name: AudioLibrary
+  m_EditorClassIdentifier: LittleBuildersWorld.Runtime::LittleBuildersWorld.Audio.AudioLibrary
+  sfx:
+  - id: 0
+    clip: {fileID: 8300000, guid: ba05129b192fe0a6c95d0878f74a4799, type: 3}
+    volume: 0.6
+  - id: 1
+    clip: {fileID: 8300000, guid: 087e13ca6fd8815a78020e91a04e9279, type: 3}
+    volume: 0.6
+  - id: 2
+    clip: {fileID: 8300000, guid: e0bb7599fb7ef16c09755664f0abbb39, type: 3}
+    volume: 0.7
+  - id: 3
+    clip: {fileID: 8300000, guid: a94664c7213d18b0d8b66e47397ecc65, type: 3}
+    volume: 0.6
+  - id: 4
+    clip: {fileID: 8300000, guid: 49d1a237422100fdba2ecbd13413b058, type: 3}
+    volume: 0.7
+  - id: 5
+    clip: {fileID: 8300000, guid: 2fb136a255ef4e73085ed46ba68f62a8, type: 3}
+    volume: 0.75
+  - id: 6
+    clip: {fileID: 8300000, guid: 90f08dc92571c3c4ab54558602ff6df2, type: 3}
+    volume: 0.55
+  - id: 7
+    clip: {fileID: 8300000, guid: 71c3290fc42a1de86a474238e9c24024, type: 3}
+    volume: 0.6
+  - id: 8
+    clip: {fileID: 8300000, guid: d42d71321a7d7d0299212f0858eb1f3e, type: 3}
+    volume: 0.45
+  - id: 9
+    clip: {fileID: 8300000, guid: dbce017bff7cb0e89bed8b2e32b6d9ca, type: 3}
+    volume: 0.7
+  - id: 10
+    clip: {fileID: 8300000, guid: 88c1704b3c04115deb2a9edcd7608351, type: 3}
+    volume: 0.65
+  - id: 11
+    clip: {fileID: 8300000, guid: c0d99ee7fa72d10efa58960f1b8020e9, type: 3}
+    volume: 0.7
+  - id: 12
+    clip: {fileID: 8300000, guid: 716542ecd2bcbe81baf22936fa78afec, type: 3}
+    volume: 0.5
+  - id: 13
+    clip: {fileID: 8300000, guid: bca5ee6a00de0a975a5f7f381bd4aaf5, type: 3}
+    volume: 0.7
+  - id: 14
+    clip: {fileID: 8300000, guid: 984e2822751f67465816f66981b42bc8, type: 3}
+    volume: 0.6
+  - id: 15
+    clip: {fileID: 8300000, guid: d8c764b880840f5fe81d699c88acc54c, type: 3}
+    volume: 0.75
+  - id: 16
+    clip: {fileID: 8300000, guid: 96e7ae234fd12deef8744cf25710ae19, type: 3}
+    volume: 0.6
+  menuMusic: {fileID: 8300000, guid: 8fc6c73e4b6abaaed8e3a30868aa005f, type: 3}
+  townMusic: {fileID: 8300000, guid: 2730b15f36582324eb51da31799d903e, type: 3}
+  engineLoop: {fileID: 8300000, guid: 75ed8a8b1498ea8a1b8161171db5e4cc, type: 3}

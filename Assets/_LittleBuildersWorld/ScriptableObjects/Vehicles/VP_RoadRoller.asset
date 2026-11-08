@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5277da1f47708fddab929cb3746b34ad, type: 3}
+  m_Name: VP_RoadRoller
+  m_EditorClassIdentifier: LittleBuildersWorld.Runtime::LittleBuildersWorld.Vehicles.VehicleProfile
+  id: roller
+  displayName: Road Roller
+  type: 3
+  portrait: {fileID: 8273129250986281910, guid: e5a0b9deac64ccc3c800c127c7e7ea07, type: 3}
+  markerColour: {r: 0.41960785, g: 0.79607844, b: 0.46666667, a: 1}
+  tuning:
+    MaxForwardSpeed: 5
+    MaxReverseSpeed: 2.5
+    Acceleration: 2.5
+    ReverseAcceleration: 2.2
+    BrakeDeceleration: 8
+    CoastDeceleration: 4.5
+    TurnRate: 58
+    FullTurnSpeed: 2
+    TurnInPlace: 0.3
+    SteerResponse: 4.5
+  mass: 3000
+  maxBodyLean: 3.5
+  wheelRadius: 0.8
+  trackScroll: 0.35714287
+  starsRequired: 0
+  engineLoop: {fileID: 8300000, guid: 75ed8a8b1498ea8a1b8161171db5e4cc, type: 3}
+  engineIdlePitch: 0.8
+  engineTopPitch: 1.2
+  hornPitch: 1.2

@@ -28,45 +28,126 @@ namespace LittleBuildersWorld.EditorTools
 
             var sfx = new Dictionary<string, float[]>
             {
+                { "sfx_button", ButtonTap() },
                 { "sfx_pop", Pop() },
-                { "sfx_plop", Plop() },
                 { "sfx_snap", Snap() },
                 { "sfx_whoosh", Whoosh() },
-                { "sfx_sizzle_loop", SizzleLoop() },
-                { "sfx_flip", Flip() },
-                { "sfx_ding", Bell(1046.5f, 0.9f, 0.5f) },
-                { "sfx_bubble_loop", BubbleLoop() },
-                { "sfx_fries_ready", Arp(new[] { 72, 76, 79, 84 }, 0.09f, Wave.Triangle, 0.5f) },
-                { "sfx_pour_loop", PourLoop() },
-                { "sfx_cream", Cream() },
-                { "sfx_squeeze", Squeeze() },
-                { "sfx_scrub", Scrub() },
-                { "sfx_capsule", CapsuleRattle() },
-                { "sfx_rain_loop", RainLoop() },
-                { "sfx_chime", Arp(new[] { 79, 83, 86, 91 }, 0.09f, Wave.Sine, 0.45f) },
-                { "sfx_straw", Slide(500f, 1500f, 0.32f) },
-                { "sfx_jingle", Jingle() },
-                { "sfx_celebration", Fanfare() },
-                { "sfx_thankyou", ThankYou() },
-                { "sfx_munch", Munch() },
-                { "sfx_happy", Happy() },
-                { "sfx_button", ButtonTap() },
-                { "sfx_sparkle", Sparkle() },
-                { "sfx_balloon_pop", BalloonPop() },
                 { "sfx_star", Bell(1318.5f, 0.6f, 0.45f) },
-                { "sfx_door_chime", DoorChime() },
+                { "sfx_celebration", Fanfare() },
+                { "sfx_sparkle", Sparkle() },
+                { "sfx_horn", Horn() },
+                { "sfx_hydraulic", Hydraulic() },
+                { "sfx_soil_dump", SoilDump() },
+                { "sfx_scoop", Scoop() },
+                { "sfx_load", LoadClunk() },
+                { "sfx_bed_tip", Slide(260f, 160f, 0.45f) },
+                { "sfx_thud", Thud() },
                 { "sfx_boing", Boing() },
-                { "sfx_footstep", Footstep() }
+                { "sfx_unlock", Jingle() },
+                { "sfx_engine_start", EngineStart() }
             };
             foreach (var kv in sfx) WriteWav($"{SfxFolder}/{kv.Key}.wav", kv.Value);
 
-            WriteWav($"{MusicFolder}/music_restaurant_loop.wav", Song(112f, false));
-            WriteWav($"{MusicFolder}/music_menu_loop.wav", Song(92f, true));
+            WriteWav($"{SfxFolder}/sfx_engine_loop.wav", EngineLoop());
+            WriteWav($"{MusicFolder}/music_town_loop.wav", Song(104f, false));
+            WriteWav($"{MusicFolder}/music_menu_loop.wav", Song(88f, true));
 
             AssetDatabase.Refresh();
             foreach (var kv in sfx) ConfigureClip($"{SfxFolder}/{kv.Key}.wav", false);
-            ConfigureClip($"{MusicFolder}/music_restaurant_loop.wav", true);
+            ConfigureClip($"{SfxFolder}/sfx_engine_loop.wav", false);
+            ConfigureClip($"{MusicFolder}/music_town_loop.wav", true);
             ConfigureClip($"{MusicFolder}/music_menu_loop.wav", true);
+        }
+
+        // ------------------------------------------------------------------ construction sounds (Little Builders World)
+        /// <summary>Soft, low engine hum: a few detuned low harmonics with a gentle chug, seamless loop.</summary>
+        private static float[] EngineLoop()
+        {
+            float[] b = Buf(2.2f);
+            const float f0 = 55f;
+            for (int i = 0; i < b.Length; i++)
+            {
+                float t = i / (float)Rate;
+                float chug = 0.75f + 0.25f * Mathf.Sin(t * Mathf.PI * 2f * 9f);
+                float v = Mathf.Sin(t * f0 * Mathf.PI * 2f) * 0.6f + Mathf.Sin(t * f0 * 2.01f * Mathf.PI * 2f) * 0.3f +
+                          Osc(Wave.Triangle, t * f0 * 3f) * 0.12f;
+                b[i] = v * chug + Noise() * 0.04f;
+            }
+            LowPass(b, 500f);
+            return Normalize(MakeLoop(b, Rate / 5), 0.6f, false);
+        }
+
+        private static float[] EngineStart()
+        {
+            float[] b = Buf(0.7f);
+            Tone(b, 0f, 0.7f, t => Mathf.Lerp(40f, 75f, Mathf.Clamp01(t / 0.4f)), k => Mathf.Sin(k * Mathf.PI) * (0.7f + 0.3f * Mathf.Sin(k * 60f)), Wave.Triangle, 0.8f);
+            NoiseBurst(b, 0f, 0.7f, k => Mathf.Sin(k * Mathf.PI) * 0.3f, 0.3f);
+            LowPass(b, 700f);
+            return Normalize(b, 0.55f);
+        }
+
+        /// <summary>Gentle "beep-beep": two soft rounded tones, never a harsh blast.</summary>
+        private static float[] Horn()
+        {
+            float[] b = Buf(0.62f);
+            for (int n = 0; n < 2; n++)
+            {
+                float s0 = n * 0.3f;
+                Tone(b, s0, 0.24f, t => 392f, Env(0.12f, 1.4f), Wave.Triangle, 0.7f);
+                Tone(b, s0, 0.24f, t => 494f, Env(0.12f, 1.4f), Wave.Sine, 0.5f);
+            }
+            LowPass(b, 2200f);
+            return Normalize(b, 0.55f);
+        }
+
+        private static float[] Hydraulic()
+        {
+            float[] b = Buf(0.6f);
+            NoiseBurst(b, 0f, 0.6f, k => Mathf.Sin(k * Mathf.PI), 0.6f);
+            LowPass(b, 900f);
+            Tone(b, 0f, 0.6f, t => Mathf.Lerp(140f, 210f, t / 0.6f), k => Mathf.Sin(k * Mathf.PI) * 0.5f, Wave.Triangle, 0.4f);
+            return Normalize(b, 0.4f);
+        }
+
+        private static float[] SoilDump()
+        {
+            float[] b = Buf(0.7f);
+            for (int k = 0; k < 14; k++)
+            {
+                float st = 0.02f + k * 0.04f + (float)s_Rng.NextDouble() * 0.03f;
+                NoiseBurst(b, st, 0.08f, e => Mathf.Pow(1f - e, 2f), 0.5f);
+            }
+            LowPass(b, 600f);
+            Tone(b, 0.05f, 0.3f, t => Mathf.Lerp(120f, 60f, t / 0.3f), Env(0.05f, 2f), Wave.Sine, 0.6f);
+            return Normalize(b, 0.6f);
+        }
+
+        private static float[] Scoop()
+        {
+            float[] b = Buf(0.35f);
+            NoiseBurst(b, 0f, 0.3f, k => Mathf.Sin(k * Mathf.PI), 0.5f);
+            LowPass(b, 800f);
+            Tone(b, 0.15f, 0.18f, t => 300f, Env(0.05f, 3f), Wave.Sine, 0.4f);
+            return Normalize(b, 0.55f);
+        }
+
+        private static float[] LoadClunk()
+        {
+            float[] b = Buf(0.4f);
+            Tone(b, 0f, 0.25f, t => Mathf.Lerp(180f, 90f, t / 0.25f), Env(0.02f, 2.5f), Wave.Triangle, 0.8f);
+            Tone(b, 0.12f, 0.22f, t => Mathf.Lerp(160f, 80f, t / 0.22f), Env(0.02f, 2.5f), Wave.Triangle, 0.6f);
+            NoiseBurst(b, 0f, 0.3f, k => Mathf.Pow(1f - k, 3f), 0.2f);
+            LowPass(b, 1200f);
+            return Normalize(b, 0.6f);
+        }
+
+        private static float[] Thud()
+        {
+            float[] b = Buf(0.3f);
+            Tone(b, 0f, 0.28f, t => Mathf.Lerp(130f, 55f, t / 0.28f), Env(0.02f, 2.2f), Wave.Sine, 1f);
+            NoiseBurst(b, 0f, 0.1f, k => 1f - k, 0.2f);
+            LowPass(b, 900f);
+            return Normalize(b, 0.6f);
         }
 
         public static AudioClip Get(string name)

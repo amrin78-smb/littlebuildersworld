@@ -42,10 +42,12 @@ namespace LittleBuildersWorld.Vehicles
         }
 
         // Angles in degrees about each pivot's local X (positive = down/curl) and the cab's local Y.
-        private static readonly Pose Rest = new Pose(0f, -18f, 55f, 40f);
-        private static readonly Pose Reach = new Pose(0f, 22f, 35f, -25f);
-        private static readonly Pose Curl = new Pose(0f, 18f, 60f, 85f);
-        private static readonly Pose Carry = new Pose(0f, -30f, 60f, 85f);
+        private static readonly Pose Rest = new Pose(0f, -35f, 100f, 60f);
+        private static readonly Pose Reach = new Pose(0f, 10f, 40f, -20f);
+        private static readonly Pose Curl = new Pose(0f, 8f, 55f, 100f);
+        private static readonly Pose Carry = new Pose(0f, -30f, 80f, 100f);
+        private static readonly Pose DumpAim = new Pose(0f, -32f, 65f, 100f);
+        private static readonly Pose DumpOpen = new Pose(0f, -32f, 65f, -30f);
 
         [SerializeField] private Vehicle m_Vehicle;
         [SerializeField] private Transform m_Cab;
@@ -127,7 +129,7 @@ namespace LittleBuildersWorld.Vehicles
             float cab = YawToward(target, 180f);
             GameServices.Instance?.Audio.Play(SfxId.Hydraulic);
             yield return Animate(WithCab(Carry, cab), 0.65f);
-            yield return Animate(WithCab(new Pose(0f, 0f, 45f, 85f), cab), 0.3f);
+            yield return Animate(WithCab(DumpAim, cab), 0.3f);
 
             m_PendingCommit = () =>
             {
@@ -139,7 +141,7 @@ namespace LittleBuildersWorld.Vehicles
                 source?.OnSoilMoved(toTruck);
                 GameServices.Instance?.Audio.Play(SfxId.SoilDump);
             };
-            yield return Animate(WithCab(new Pose(0f, 5f, 40f, -45f), cab), 0.35f);
+            yield return Animate(WithCab(DumpOpen, cab), 0.35f);
             CommitPending();
             yield return new WaitForSeconds(0.2f);
             yield return Animate(Rest, 0.7f);
