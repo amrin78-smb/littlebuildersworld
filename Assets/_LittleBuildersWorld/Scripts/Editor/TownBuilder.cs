@@ -48,7 +48,9 @@ namespace LittleBuildersWorld.EditorTools
             Roadworks();
             Playground();
             Landmarks();
+            Pond();
             Trees();
+            Meadow();
             Clouds();
             Boundaries();
             RecoveryPoints();
@@ -294,6 +296,22 @@ namespace LittleBuildersWorld.EditorTools
             c.size = new Vector3(260f, 1f, 260f);
             g.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
             Static(g);
+            // Beyond the play area: more grass and soft rolling hills fading into the fog, so the world has a horizon.
+            GameObject far = A.Part("FarGround", s_Env, A.Ground("Ground_520", 520f, 8f), A.Grass, new Vector3(0f, -0.08f, 0f));
+            far.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            Static(far);
+            var hrng = new System.Random(77);
+            Material[] hillMats = { A.Colour("HillGreen", "#7CC860", 0.05f), A.Colour("HillGreenDark", "#5FB356", 0.05f) };
+            for (int i = 0; i < 22; i++)
+            {
+                float a = (i + (float)hrng.NextDouble() * 0.5f) / 22f * Mathf.PI * 2f;
+                float dist = 165f + (float)hrng.NextDouble() * 40f;
+                float rad = 32f + (float)hrng.NextDouble() * 22f;
+                float h = 10f + (float)hrng.NextDouble() * 14f;
+                GameObject hl = A.Part("FarHill", s_Env, A.Hill($"FarHill_{rad:0}_{h:0}", rad, h), hillMats[i % 2], new Vector3(Mathf.Cos(a) * dist, -0.1f, Mathf.Sin(a) * dist));
+                hl.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+                Static(hl);
+            }
             // Gentle practice hill: shows smooth handling on slopes.
             GameObject hill = A.Part("PracticeHill", s_Env, A.Hill("Hill_12_1p6", 12f, 1.6f), A.Grass, new Vector3(-35f, 0f, -30f));
             hill.AddComponent<MeshCollider>();
@@ -529,6 +547,21 @@ namespace LittleBuildersWorld.EditorTools
                 A.Part("WindowSideL", house, A.Box(0.14f, 1.2f, 1.6f, 0.06f), A.Glass, new Vector3(30f, 2.4f, 84f)),
                 A.Part("WindowSideR", house, A.Box(0.14f, 1.2f, 1.6f, 0.06f), A.Glass, new Vector3(38f, 2.4f, 84f))
             };
+            // White frames, cross bars and flower boxes (children, so they appear with the windows).
+            string[] flowerCols = { "#FF8FC7", "#FFE066", "#FF595E" };
+            for (int w = 2; w < 6; w++)
+            {
+                Transform win = doors[w].transform;
+                bool side = w >= 4;
+                float out_ = side ? (w == 4 ? -1f : 1f) : -1f; // outward direction along the facing axis
+                Vector3 Fs(float a, float b, float depth) => side ? new Vector3(depth, b, a) : new Vector3(a, b, depth);
+                A.Part("Frame", win, A.Box(Fs(1.62f, 1.42f, 0.1f).x, Fs(1.62f, 1.42f, 0.1f).y, Fs(1.62f, 1.42f, 0.1f).z, 0.05f), A.White, Fs(0f, 0f, -out_ * 0.03f));
+                A.Part("BarV", win, A.Box(Fs(0.08f, 1.2f, 0.2f).x, Fs(0.08f, 1.2f, 0.2f).y, Fs(0.08f, 1.2f, 0.2f).z, 0.02f), A.White, Vector3.zero);
+                A.Part("BarH", win, A.Box(Fs(1.4f, 0.08f, 0.2f).x, Fs(1.4f, 0.08f, 0.2f).y, Fs(1.4f, 0.08f, 0.2f).z, 0.02f), A.White, Vector3.zero);
+                A.Part("FlowerBox", win, A.Box(Fs(1.5f, 0.28f, 0.34f).x, Fs(1.5f, 0.28f, 0.34f).y, Fs(1.5f, 0.28f, 0.34f).z, 0.06f), A.Wood, Fs(0f, -0.78f, out_ * 0.22f));
+                for (int f = 0; f < 3; f++)
+                    A.Part("Flower", win, A.Sphere(0.14f), A.Colour("Flower" + f, flowerCols[f], 0.2f), Fs(-0.45f + f * 0.45f, -0.57f, out_ * 0.22f));
+            }
             var garden = new List<GameObject>();
             garden.Add(A.Part("Path", house, A.Box(1.6f, 0.06f, 6f, 0.02f), A.Concrete, new Vector3(34f, 0.07f, 77f)));
             foreach (Vector3 p in new[] { new Vector3(30f, 0.03f, 78.5f), new Vector3(38f, 0.03f, 78.5f), new Vector3(28.5f, 0.03f, 88f), new Vector3(39.5f, 0.03f, 88f) })
@@ -640,6 +673,16 @@ namespace LittleBuildersWorld.EditorTools
                 Transform p = Group("Patch", roll);
                 p.position = new Vector3(60f, 0f, z);
                 GameObject pothole = A.Part("Pothole", p, A.Disc(2.2f, 0.03f, 0.01f, 20), A.Pothole, new Vector3(0f, 0.05f, 0f), null, new Vector3(1.3f, 1f, 1f));
+                // A real-looking hole: darker middle, broken bits of road around the edge, a few pebbles.
+                A.Part("Deep", pothole.transform, A.Disc(1.3f, 0.03f, 0.01f, 16), A.Colour("PotholeDeep", "#28231F", 0.05f), new Vector3(0.2f, 0.01f, -0.1f));
+                Material chunk = A.Colour("BrokenRoad", "#6E7380", 0.15f);
+                for (int i = 0; i < 9; i++)
+                {
+                    float a = i / 9f * Mathf.PI * 2f + z;
+                    A.Part("Chunk", pothole.transform, A.Box(0.55f, 0.1f, 0.35f, 0.04f), chunk, new Vector3(Mathf.Cos(a) * 2.05f, 0.03f, Mathf.Sin(a) * 2.05f), new Vector3(i * 7f, a * Mathf.Rad2Deg * -1f + 90f, i % 2 == 0 ? 6f : -5f));
+                }
+                for (int i = 0; i < 4; i++)
+                    A.Part("Pebble", pothole.transform, A.Sphere(0.12f), A.Gravel, new Vector3(Mathf.Cos(i * 2.1f + z) * 1.0f, 0.04f, Mathf.Sin(i * 2.1f + z) * 0.8f));
                 GameObject rough = A.Part("Rough", p, A.Dome(2.3f, 0.35f), A.Gravel, new Vector3(0f, 0.02f, 0f), null, new Vector3(1.3f, 1f, 1f));
                 for (int i = 0; i < 5; i++)
                     A.Part("Lump", rough.transform, A.Sphere(0.3f), A.Rock, new Vector3(Mathf.Cos(i * 1.3f) * 1.3f, 0.25f, Mathf.Sin(i * 1.3f) * 1.3f));
@@ -792,6 +835,11 @@ namespace LittleBuildersWorld.EditorTools
                 for (int i = 0; i < 5; i++)
                     A.Part("Lump", rough.transform, A.Sphere(0.32f), A.Soil, new Vector3(Mathf.Cos(i * 1.3f) * 1.3f, 0.22f, Mathf.Sin(i * 1.3f) * 1.3f));
                 GameObject smooth = A.Part("Mat", p, A.Disc(2.4f, 0.04f, 0.015f, 24), A.Colour(k % 2 == 0 ? "SoftMatBlue" : "SoftMatGreen", k % 2 == 0 ? "#4EA8DE" : "#6BCB77", 0.15f), new Vector3(0f, 0.05f, 0f), null, new Vector3(1.25f, 1f, 1.25f));
+                // Play-mat pattern: a ring of bright dots.
+                Material dot = A.Colour(k % 2 == 0 ? "SoftMatDotYellow" : "SoftMatDotWhite", k % 2 == 0 ? "#FFE066" : "#FFFFFF", 0.15f);
+                A.Part("Dot", smooth.transform, A.Disc(0.45f, 0.03f, 0.01f, 12), dot, new Vector3(0f, 0.02f, 0f));
+                for (int i = 0; i < 6; i++)
+                    A.Part("Dot", smooth.transform, A.Disc(0.3f, 0.03f, 0.01f, 12), dot, new Vector3(Mathf.Cos(i * Mathf.PI / 3f) * 1.4f, 0.02f, Mathf.Sin(i * Mathf.PI / 3f) * 1.4f));
                 A.NoShadows(p.gameObject);
                 var rp = p.gameObject.AddComponent<RoughPatch>();
                 E.Set(rp, "m_Rough", rough);
@@ -813,7 +861,7 @@ namespace LittleBuildersWorld.EditorTools
                 Instance("Roundabout", pg, new Vector3(-30f, 0.06f, -77f)),
                 Instance("Bench", pg, new Vector3(-46.5f, 0.03f, -83f), 90f)
             };
-            Ambient(finale[1].transform.Find("Spin"), AmbientMotion.Kind.Spin, 40f, 0f);
+            Ambient(finale[1].transform.Find("Spin"), AmbientMotion.Kind.Turn, 40f, 0f);
             Ambient(finale[0].transform.Find("Flag"), AmbientMotion.Kind.Wave, 2.5f, 12f);
             (string kid, Vector3 pos, float yaw)[] kids = { ("KidA", new Vector3(-36.5f, 0.06f, -78.5f), 20f), ("KidB", new Vector3(-31.5f, 0.06f, -79f), -30f), ("KidC", new Vector3(-27.5f, 0.03f, -87f), -60f) };
             foreach (var k in kids)
@@ -906,6 +954,83 @@ namespace LittleBuildersWorld.EditorTools
                 Static(Instance("Lamp", lm, new Vector3(i * 22f + 11f, 0f, 66.5f)));
                 Static(Instance("Lamp", lm, new Vector3(i * 22f + 11f, 0f, -66.5f)));
             }
+        }
+
+        /// <summary>A duck pond in the quiet north-west corner inside the loop.</summary>
+        private static void Pond()
+        {
+            Vector3 c = new Vector3(-36f, 0f, 36f);
+            GameObject pond = Instance("Pond", Group("Landmarks"), c, 20f);
+            Static(pond);
+            for (int i = 0; i < 2; i++)
+            {
+                Transform duck = pond.transform.Find("Duck" + i);
+                duck.gameObject.isStatic = false;
+                foreach (Transform t in duck.GetComponentsInChildren<Transform>()) GameObjectUtility.SetStaticEditorFlags(t.gameObject, 0);
+                Ambient(duck, AmbientMotion.Kind.Bob, 1.6f + i * 0.5f, 0.06f);
+            }
+            s_Keepout.Add((c, 7f));
+        }
+
+        /// <summary>
+        /// Flowers and grass tufts scattered over the grass, built as a few combined meshes (one per colour) so
+        /// hundreds of little details cost only a handful of draw calls.
+        /// </summary>
+        private static void Meadow()
+        {
+            Transform meadow = Group("Meadow");
+            var rng = new System.Random(99);
+            string[] petalCols = { "#FF8FC7", "#FFE066", "#FFFFFF", "#B39CFF", "#FF7F6E" };
+            var petals = new List<(Mesh, Matrix4x4)>[petalCols.Length];
+            for (int i = 0; i < petals.Length; i++) petals[i] = new List<(Mesh, Matrix4x4)>();
+            var centres = new List<(Mesh, Matrix4x4)>();
+            var tufts = new List<(Mesh, Matrix4x4)>();
+            // Very low-poly pieces: the meadow is hundreds of them.
+            Mesh LowLathe(string n, params Vector2[] profile) => A.SaveMesh(n, LittleBuildersWorld.Core.MeshFactory.Lathe(profile, 6, n));
+            Mesh petal = LowLathe("MeadowPetal", new Vector2(0f, 0f), new Vector2(0.24f, 0f), new Vector2(0.24f, 0.05f), new Vector2(0f, 0.07f));
+            Mesh centre = LowLathe("MeadowCentre", new Vector2(0f, 0f), new Vector2(0.15f, 0f), new Vector2(0.13f, 0.08f), new Vector2(0f, 0.1f));
+            Mesh blade = LowLathe("MeadowBlade", new Vector2(0f, 0f), new Vector2(0.09f, 0f), new Vector2(0.02f, 0.5f), new Vector2(0f, 0.55f));
+            int flowers = 0, grass = 0;
+            for (int attempt = 0; attempt < 4000 && (flowers < 150 || grass < 200); attempt++)
+            {
+                var p = new Vector3((float)rng.NextDouble() * 190f - 95f, 0f, (float)rng.NextDouble() * 190f - 95f);
+                if (!Free(p, 1.5f)) continue;
+                if (flowers < 150 && rng.NextDouble() < 0.45)
+                {
+                    // A little flower: five round petals around a yellow centre, lying on the grass.
+                    int col = rng.Next(petalCols.Length);
+                    float s = 0.8f + (float)rng.NextDouble() * 0.6f;
+                    for (int k = 0; k < 4; k++)
+                    {
+                        float a = k / 4f * Mathf.PI * 2f + 0.4f;
+                        petals[col].Add((petal, Matrix4x4.TRS(p + new Vector3(Mathf.Cos(a) * 0.24f * s, 0.06f, Mathf.Sin(a) * 0.24f * s), Quaternion.identity, Vector3.one * s)));
+                    }
+                    centres.Add((centre, Matrix4x4.TRS(p + new Vector3(0f, 0.07f, 0f), Quaternion.identity, Vector3.one * s)));
+                    flowers++;
+                }
+                else if (grass < 200)
+                {
+                    for (int k = 0; k < 3; k++)
+                    {
+                        float a = k / 3f * Mathf.PI * 2f + (float)rng.NextDouble();
+                        var tilt = Quaternion.Euler(Mathf.Cos(a) * 18f, 0f, Mathf.Sin(a) * 18f);
+                        tufts.Add((blade, Matrix4x4.TRS(p + new Vector3(Mathf.Cos(a) * 0.1f, 0f, Mathf.Sin(a) * 0.1f), tilt, new Vector3(1f, 0.7f + (float)rng.NextDouble() * 0.6f, 1f))));
+                    }
+                    grass++;
+                }
+            }
+            void Emit(string name, List<(Mesh, Matrix4x4)> parts, Material mat)
+            {
+                if (parts.Count == 0) return;
+                Mesh m = A.SaveMesh("Meadow_" + name, LittleBuildersWorld.Core.MeshFactory.Combine("Meadow_" + name, parts.ToArray()));
+                GameObject go = A.Part(name, meadow, m, mat, Vector3.zero);
+                go.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+                Static(go);
+            }
+            for (int i = 0; i < petalCols.Length; i++) Emit("Petals" + i, petals[i], A.Colour("Petal" + i, petalCols[i], 0.2f));
+            Emit("Centres", centres, A.Colour("FlowerYellow", "#FFE066"));
+            Emit("Grass", tufts, A.Colour("GrassTuft", "#5DBB4C", 0.1f));
+            Debug.Log($"[LBW] Meadow: {flowers} flowers, {grass} grass tufts.");
         }
 
         private static float DistanceToSegment(Vector3 p, Vector3 a, Vector3 b)

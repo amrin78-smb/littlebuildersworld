@@ -9,7 +9,7 @@ namespace LittleBuildersWorld.World
     /// </summary>
     public sealed class AmbientMotion : MonoBehaviour
     {
-        public enum Kind { Spin, Sway, Drift, Bob, Wave }
+        public enum Kind { Spin, Sway, Drift, Bob, Wave, Turn }
 
         [Serializable]
         public struct Item
@@ -52,6 +52,9 @@ namespace LittleBuildersWorld.World
                 {
                     case Kind.Spin:
                         tr.Rotate(0f, 0f, it.speed * dt, Space.Self);
+                        break;
+                    case Kind.Turn: // spin flat, around the local up axis (roundabout)
+                        tr.Rotate(0f, it.speed * dt, 0f, Space.Self);
                         break;
                     case Kind.Sway:
                         tr.localRotation = it.restRot * Quaternion.Euler(Mathf.Sin(t * it.speed + it.phase) * it.amount, 0f,

@@ -26,7 +26,7 @@ namespace LittleBuildersWorld.EditorTools
         }
 
         // ------------------------------------------------------------------ palette (see ART_DIRECTION.md)
-        public static Material Lit(string name, string hex, float smoothness = 0.25f, Texture2D tex = null, Vector2? tiling = null)
+        public static Material Lit(string name, string hex, float smoothness = 0.25f, Texture2D tex = null, Vector2? tiling = null, float glow = 0f)
         {
             string key = "lit_" + name;
             if (s_Materials.TryGetValue(key, out Material m) && m != null) return m;
@@ -45,6 +45,10 @@ namespace LittleBuildersWorld.EditorTools
             m.SetFloat("_SpecularHighlights", smoothness > 0.3f ? 1f : 0f);
             m.SetTexture("_BaseMap", tex);
             if (tiling.HasValue) m.SetTextureScale("_BaseMap", tiling.Value);
+            // Glow: a little emission so lights read as "on" in shade (no bloom: too costly on the budget phone).
+            m.SetColor("_EmissionColor", glow > 0f ? E.Hex(hex) * glow : Color.black);
+            m.globalIlluminationFlags = glow > 0f ? MaterialGlobalIlluminationFlags.RealtimeEmissive : MaterialGlobalIlluminationFlags.EmissiveIsBlack;
+            if (glow > 0f) m.EnableKeyword("_EMISSION"); else m.DisableKeyword("_EMISSION");
             m.enableInstancing = true;
             BaseShaderGUI.SetMaterialKeywords(m);
             EditorUtility.SetDirty(m);
@@ -134,6 +138,13 @@ namespace LittleBuildersWorld.EditorTools
         public static Material RoofRed => Lit("RoofRed", "#E63946", 0.2f);
         public static Material ConeOrange => Lit("Cone", "#FF7A1A", 0.3f);
 
+        public static Material TailLight => Lit("TailLight", "#F0384A", 0.6f, null, null, 0.35f);
+        public static Material Indicator => Lit("Indicator", "#FFA62B", 0.6f, null, null, 0.35f);
+        public static Material HeadLight => Lit("HeadLight", "#FFF6C8", 0.8f, null, null, 0.45f);
+        public static Material Cheek => Lit("Cheek", "#FF9AAE", 0.2f);
+        public static Material Hazard => Lit("HazardYellow", "#FFD447", 0.3f);
+        public static Material Skin => Lit("ResidentSkin", "#F1C27D", 0.3f);
+
         public static Material Colour(string name, string hex, float smoothness = 0.3f) => Lit(name, hex, smoothness);
 
         // ------------------------------------------------------------------ meshes
@@ -150,7 +161,10 @@ namespace LittleBuildersWorld.EditorTools
         {
             string name = $"RBox_{x:0.##}x{y:0.##}x{z:0.##}_r{radius:0.##}".Replace('.', 'p');
             if (s_Meshes.TryGetValue(name, out Mesh m) && m != null) return m;
-            return SaveMesh(name, MeshFactory.RoundedBox(new Vector3(x, y, z), radius, 3));
+            // Bevel detail follows the bevel size: a tiny bevel needs no more than a chamfer (keeps vertex counts low on
+            // the budget phone; fences alone are hundreds of boxes).
+            int segments = radius <= 0.05f ? 1 : radius <= 0.1f ? 2 : 3;
+            return SaveMesh(name, MeshFactory.RoundedBox(new Vector3(x, y, z), radius, segments));
         }
 
         /// <summary>Wheel/drum: a rounded disc whose axle is the X axis, centred.</summary>
@@ -163,6 +177,31 @@ namespace LittleBuildersWorld.EditorTools
             Mesh combined = MeshFactory.Combine(name, (disc, toAxle));
             combined.RecalculateNormals();
             Object.DestroyImmediate(disc);
+            return SaveMesh(name, combined);
+        }
+
+        /// <summary>A tyre with chunky tread blocks (axle on X), like <see cref="Wheel"/>.</summary>
+        public static Mesh Tyre(float radius, float width)
+        {
+            string name = $"Tyre_r{radius:0.##}_w{width:0.##}".Replace('.', 'p');
+            if (s_Meshes.TryGetValue(name, out Mesh m) && m != null) return m;
+            float core = radius - 0.05f;
+            Mesh disc = MeshFactory.Lathe(MeshFactory.RoundedDiscProfile(core, width, Mathf.Min(0.15f, width * 0.3f), 3), 24, name + "_src");
+            Mesh lug = MeshFactory.RoundedBox(new Vector3(width * 0.8f, 0.12f, 0.17f), 0.035f, 1);
+            const int n = 16;
+            var parts = new (Mesh, Matrix4x4)[n + 1];
+            parts[0] = (disc, Matrix4x4.TRS(new Vector3(-width * 0.5f, 0f, 0f), Quaternion.Euler(0f, 0f, -90f), Vector3.one));
+            for (int i = 0; i < n; i++)
+            {
+                float a = i * 360f / n;
+                float r = a * Mathf.Deg2Rad;
+                // Stagger the blocks left/right for a chunky toy tread.
+                float x = (i % 2 == 0 ? -1f : 1f) * width * 0.08f;
+                parts[i + 1] = (lug, Matrix4x4.TRS(new Vector3(x, Mathf.Cos(r) * (core - 0.01f), Mathf.Sin(r) * (core - 0.01f)), Quaternion.Euler(a, 0f, 0f), Vector3.one));
+            }
+            Mesh combined = MeshFactory.Combine(name, parts);
+            Object.DestroyImmediate(disc);
+            Object.DestroyImmediate(lug);
             return SaveMesh(name, combined);
         }
 
@@ -184,6 +223,9 @@ namespace LittleBuildersWorld.EditorTools
         {
             string name = $"Sphere_r{radius:0.##}".Replace('.', 'p');
             if (s_Meshes.TryGetValue(name, out Mesh m) && m != null) return m;
+            // Small spheres (eyes, flowers, bolts) need far fewer facets than tree crowns.
+            if (radius < 0.12f) return SaveMesh(name, MeshFactory.Sphere(radius, 10, 6, name));
+            if (radius < 0.3f) return SaveMesh(name, MeshFactory.Sphere(radius, 12, 8, name));
             return SaveMesh(name, MeshFactory.Sphere(radius, 16, 10, name));
         }
 

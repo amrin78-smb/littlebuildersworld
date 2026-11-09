@@ -46,7 +46,8 @@ namespace LittleBuildersWorld.EditorTools
             Save(Debris("Log"), "DebrisLog", ActivityFolder);
             Save(Debris("Crate"), "DebrisCrate", ActivityFolder);
             Save(Debris("Cone"), "DebrisCone", ActivityFolder);
-            Save(Resident("#FFB703", "#219EBC"), "Resident");
+            Save(Resident(), "Resident");
+            Save(Pond(), "Pond");
             Save(Person("Foreman", "#FFC93C", "#FF9F1C", 1f, true), "Foreman");
             Save(Person("KidA", "#3A2E2A", "#FF595E", 0.72f, false), "KidA");
             Save(Person("KidB", "#8A5A3A", "#4EA8DE", 0.68f, false), "KidB");
@@ -88,6 +89,9 @@ namespace LittleBuildersWorld.EditorTools
             A.Part("Leaves", sway, A.Sphere(1.6f), A.Leaf, new Vector3(0f, 3.1f, 0f), null, new Vector3(1f, 0.95f, 1f));
             A.Part("Leaves2", sway, A.Sphere(1.05f), A.LeafLight, new Vector3(0.75f, 3.9f, 0.3f));
             A.Part("Leaves3", sway, A.Sphere(0.9f), A.LeafLight, new Vector3(-0.8f, 3.6f, -0.4f));
+            A.Part("Leaves4", sway, A.Sphere(0.85f), A.Leaf, new Vector3(0.1f, 3.3f, 1.0f));
+            A.Part("Apple", sway, A.Sphere(0.14f), A.Colour("Apple", "#FF595E", 0.5f), new Vector3(0.9f, 2.9f, 1.05f));
+            A.Part("Apple", sway, A.Sphere(0.14f), A.Colour("Apple", "#FF595E", 0.5f), new Vector3(-1.1f, 3.2f, 0.7f));
             var c = r.AddComponent<CapsuleCollider>();
             c.center = new Vector3(0f, 1.2f, 0f);
             c.radius = 0.45f;
@@ -155,8 +159,11 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Lamp()
         {
             GameObject r = Root("Lamp");
+            A.Part("Base", r.transform, A.Disc(0.22f, 0.45f, 0.06f, 12), A.DarkSteel, Vector3.zero);
             A.Part("Pole", r.transform, A.Disc(0.1f, 3.6f, 0.04f, 10), A.DarkSteel, Vector3.zero);
-            A.Part("Head", r.transform, A.Sphere(0.32f), A.Colour("LampGlow", "#FFF3B0", 0.8f), new Vector3(0f, 3.75f, 0f));
+            A.Part("Collar", r.transform, A.Disc(0.17f, 0.12f, 0.04f, 12), A.DarkSteel, new Vector3(0f, 3.45f, 0f));
+            A.Part("Head", r.transform, A.Sphere(0.32f), A.Lit("LampGlow", "#FFF3B0", 0.8f, null, null, 0.5f), new Vector3(0f, 3.75f, 0f));
+            A.Part("Cap", r.transform, A.Dome(0.3f, 0.18f), A.DarkSteel, new Vector3(0f, 3.98f, 0f));
             return r;
         }
 
@@ -202,6 +209,12 @@ namespace LittleBuildersWorld.EditorTools
             A.Part("Door", r.transform, A.Box(1.3f, 2.2f, 0.1f, 0.06f), A.Wood, new Vector3(-1.2f, 1.1f, -2.27f));
             A.Part("Window", r.transform, A.Box(1.4f, 1f, 0.08f, 0.06f), A.Glass, new Vector3(1.3f, 1.9f, -2.27f));
             A.Part("Sign", r.transform, A.Box(2.6f, 0.7f, 0.1f, 0.1f), A.Colour("SignYellow", "#FFC93C"), new Vector3(0f, 2.9f, -2.3f));
+            A.Part("SignHat", r.transform, A.Dome(0.42f, 0.3f), A.Colour("HardHat_FF9F1C", "#FF9F1C", 0.5f), new Vector3(0f, 2.72f, -2.4f), new Vector3(-90f, 0f, 0f), new Vector3(1f, 0.35f, 1f));
+            A.Part("DoorFrame", r.transform, A.Box(1.5f, 2.35f, 0.08f, 0.05f), A.White, new Vector3(-1.2f, 1.15f, -2.25f));
+            A.Part("Knob", r.transform, A.Sphere(0.08f), A.Colour("Gold", "#FFC93C", 0.6f), new Vector3(-0.75f, 1.1f, -2.35f));
+            A.Part("WindowFrame", r.transform, A.Box(1.6f, 1.2f, 0.06f, 0.05f), A.White, new Vector3(1.3f, 1.9f, -2.25f));
+            foreach (float x in new[] { -3.0f, 3.0f })
+                A.Part("Gutter", r.transform, A.Box(0.12f, 3.2f, 0.12f, 0.04f), A.Colour("ShedRoof", "#1982C4", 0.3f), new Vector3(x, 1.6f, -2.2f));
             BoxCol(r, new Vector3(0f, 1.7f, 0f), new Vector3(6f, 3.4f, 4.5f));
             return Building(r);
         }
@@ -214,7 +227,17 @@ namespace LittleBuildersWorld.EditorTools
                 float a = i * 90f * Mathf.Deg2Rad;
                 A.Part("Leg", r.transform, A.Box(0.3f, 7f, 0.3f, 0.08f), A.DarkSteel, new Vector3(Mathf.Cos(a) * 1.8f, 3.5f, Mathf.Sin(a) * 1.8f));
             }
+            for (int i = 0; i < 4; i++)
+            {
+                float a0 = i * 90f * Mathf.Deg2Rad, a1 = (i + 1) * 90f * Mathf.Deg2Rad;
+                Vector3 p0 = new Vector3(Mathf.Cos(a0) * 1.8f, 0f, Mathf.Sin(a0) * 1.8f), p1 = new Vector3(Mathf.Cos(a1) * 1.8f, 0f, Mathf.Sin(a1) * 1.8f);
+                Vector3 d = p1 - p0;
+                float yaw = -Mathf.Atan2(d.z, d.x) * Mathf.Rad2Deg;
+                foreach (float y in new[] { 2.4f, 4.8f })
+                    A.Part("Brace", r.transform, A.Box(d.magnitude, 0.14f, 0.14f, 0.04f), A.Steel, (p0 + p1) * 0.5f + Vector3.up * y, new Vector3(0f, yaw, 0f));
+            }
             A.Part("Tank", r.transform, A.Disc(2.6f, 3.2f, 0.6f, 24), A.Colour("TowerTank", "#8AD8FF", 0.4f), new Vector3(0f, 7f, 0f));
+            A.Part("Drop", r.transform, A.Sphere(0.55f), A.White, new Vector3(0f, 8.6f, -2.45f), null, new Vector3(0.8f, 1f, 0.3f));
             A.Part("Cap", r.transform, A.Dome(2.7f, 1.2f), A.Colour("TowerCap", "#FF595E", 0.3f), new Vector3(0f, 10.2f, 0f));
             A.Part("Band", r.transform, A.Disc(2.65f, 0.4f, 0.1f, 24), A.White, new Vector3(0f, 8.4f, 0f));
             BoxCol(r, new Vector3(0f, 3.5f, 0f), new Vector3(4f, 7f, 4f));
@@ -229,8 +252,19 @@ namespace LittleBuildersWorld.EditorTools
             A.Part("Door", r.transform, A.Box(1.2f, 2f, 0.2f, 0.1f), A.Wood, new Vector3(0f, 1f, -2.9f));
             Transform hub = A.Pivot("Blades", r.transform, new Vector3(0f, 9.8f, -1.7f));
             A.Part("Hub", hub, A.Sphere(0.45f), A.DarkWood, Vector3.zero);
+            Material sail = A.Colour("MillSail", "#FF595E", 0.3f);
             for (int i = 0; i < 4; i++)
-                A.Part("Blade", hub, A.Box(0.9f, 5f, 0.12f, 0.06f), A.White, Quaternion.Euler(0f, 0f, i * 90f) * new Vector3(0f, 2.8f, 0f), new Vector3(0f, 0f, i * 90f));
+            {
+                Quaternion q = Quaternion.Euler(0f, 0f, i * 90f);
+                A.Part("Spar", hub, A.Box(0.22f, 5.4f, 0.16f, 0.06f), A.DarkWood, q * new Vector3(0f, 2.9f, 0f), new Vector3(0f, 0f, i * 90f));
+                A.Part("Sail", hub, A.Box(1.0f, 3.8f, 0.08f, 0.05f), i % 2 == 0 ? sail : A.White, q * new Vector3(0.62f, 3.4f, 0.06f), new Vector3(0f, 0f, i * 90f));
+            }
+            foreach (float y in new[] { 4.2f, 7.0f })
+            {
+                float rad = 3.2f * (1f - y / 12f);
+                A.Part("Window", r.transform, A.Box(0.7f, 0.9f, 0.2f, 0.12f), A.Glass, new Vector3(0f, y, -rad + 0.02f), new Vector3(-15f, 0f, 0f));
+            }
+            A.Part("Balcony", r.transform, A.Disc(2.1f, 0.15f, 0.05f, 24), A.DarkWood, new Vector3(0f, 8.2f, 0f));
             BoxCol(r, new Vector3(0f, 5f, 0f), new Vector3(4.5f, 10f, 4.5f));
             return Building(r);
         }
@@ -243,11 +277,71 @@ namespace LittleBuildersWorld.EditorTools
             A.Part("RoofL", r.transform, A.Box(7.6f, 0.4f, 4.4f, 0.15f), roofMat, new Vector3(0f, 5.1f, -1.4f), new Vector3(-35f, 0f, 0f));
             A.Part("RoofR", r.transform, A.Box(7.6f, 0.4f, 4.4f, 0.15f), roofMat, new Vector3(0f, 5.1f, 1.4f), new Vector3(35f, 0f, 0f));
             A.Part("Door", r.transform, A.Box(1.3f, 2.2f, 0.12f, 0.08f), A.Wood, new Vector3(0f, 1.1f, -3.02f));
+            A.Part("DoorFrame", r.transform, A.Box(1.55f, 2.4f, 0.08f, 0.06f), A.White, new Vector3(0f, 1.2f, -2.99f));
+            A.Part("Knob", r.transform, A.Sphere(0.08f), A.Colour("Gold", "#FFC93C", 0.6f), new Vector3(0.4f, 1.1f, -3.1f));
+            A.Part("Step", r.transform, A.Box(1.9f, 0.2f, 0.7f, 0.06f), A.Concrete, new Vector3(0f, 0.1f, -3.3f));
             foreach (float x in new[] { -2.3f, 2.3f })
-                A.Part("Window", r.transform, A.Box(1.2f, 1.1f, 0.1f, 0.08f), A.Glass, new Vector3(x, 2.4f, -3.02f));
+                Window(r.transform, new Vector3(x, 2.4f, -3.0f), 0f, true);
+            foreach (float side in new[] { -1f, 1f })
+                Window(r.transform, new Vector3(side * 3.5f, 2.4f, 0f), -side * 90f, false);
             A.Part("Chimney", r.transform, A.Box(0.7f, 1.6f, 0.7f, 0.1f), A.Brick, new Vector3(2.2f, 5.8f, 1.2f));
             BoxCol(r, new Vector3(0f, 2.5f, 0f), new Vector3(7f, 5f, 6f));
             return Building(r);
+        }
+
+        /// <summary>A white-framed window with a cross bar (facing -Z before <paramref name="yaw"/>), optional flower box.</summary>
+        private static void Window(Transform parent, Vector3 pos, float yaw, bool flowers)
+        {
+            Transform w = A.Pivot("Window", parent, pos, new Vector3(0f, yaw, 0f));
+            A.Part("Frame", w, A.Box(1.4f, 1.3f, 0.08f, 0.05f), A.White, Vector3.zero);
+            A.Part("Glass", w, A.Box(1.18f, 1.08f, 0.1f, 0.04f), A.Glass, new Vector3(0f, 0f, -0.02f));
+            A.Part("BarV", w, A.Box(0.08f, 1.1f, 0.12f, 0.02f), A.White, new Vector3(0f, 0f, -0.04f));
+            A.Part("BarH", w, A.Box(1.2f, 0.08f, 0.12f, 0.02f), A.White, new Vector3(0f, 0f, -0.04f));
+            if (!flowers) return;
+            A.Part("FlowerBox", w, A.Box(1.4f, 0.26f, 0.32f, 0.06f), A.Wood, new Vector3(0f, -0.75f, -0.16f));
+            string[] cols = { "#FF8FC7", "#FFE066", "#FF595E" };
+            for (int i = 0; i < 3; i++)
+                A.Part("Flower", w, A.Sphere(0.13f), A.Colour("Flower" + i, cols[i], 0.2f), new Vector3(-0.42f + i * 0.42f, -0.55f, -0.16f));
+        }
+
+        /// <summary>A small duck pond (decoration). "Duck0"/"Duck1" bob on the water (AmbientMotion).</summary>
+        private static GameObject Pond()
+        {
+            GameObject r = Root("Pond");
+            A.Part("Bed", r.transform, A.Disc(5.2f, 0.06f, 0.02f, 32), A.Colour("PondBed", "#4FA3C7", 0.5f), new Vector3(0f, 0.01f, 0f), null, new Vector3(1f, 1f, 0.75f));
+            A.Part("Water", r.transform, A.Disc(4.9f, 0.08f, 0.02f, 32), A.Colour("Water", "#5FC9F8", 0.8f), new Vector3(0f, 0.03f, 0f), null, new Vector3(1f, 1f, 0.75f));
+            var rng = new System.Random(11);
+            for (int i = 0; i < 18; i++)
+            {
+                float a = i / 18f * Mathf.PI * 2f;
+                var p = new Vector3(Mathf.Cos(a) * 5.1f, 0.1f, Mathf.Sin(a) * 5.1f * 0.75f);
+                float s = 0.35f + (float)rng.NextDouble() * 0.2f;
+                A.Part("Stone", r.transform, A.Sphere(0.6f), A.Rock, p, new Vector3(0f, i * 40f, 0f), new Vector3(s * 1.4f, s * 0.7f, s));
+            }
+            Material pad = A.Colour("LilyPad", "#4CB050", 0.2f);
+            foreach (Vector3 p in new[] { new Vector3(2.2f, 0.09f, 1.1f), new Vector3(-2.6f, 0.09f, -0.8f), new Vector3(0.8f, 0.09f, -2.0f) })
+            {
+                A.Part("LilyPad", r.transform, A.Disc(0.55f, 0.04f, 0.01f, 12), pad, p);
+                A.Part("Lily", r.transform, A.Sphere(0.12f), A.Colour("FlowerPink", "#FF8FC7"), p + new Vector3(0.15f, 0.08f, 0.1f));
+            }
+            Material yellow = A.Colour("Duck", "#FFD447", 0.3f);
+            Material beak = A.Colour("Beak", "#FF9F1C", 0.3f);
+            for (int i = 0; i < 2; i++)
+            {
+                Transform d = A.Pivot("Duck" + i, r.transform, new Vector3(-1f + i * 2.2f, 0.12f, 0.6f - i * 1.4f), new Vector3(0f, 40f + i * 150f, 0f));
+                float s = i == 0 ? 1f : 0.7f;
+                A.Part("Body", d, A.Sphere(0.4f * s), yellow, new Vector3(0f, 0.2f * s, 0f), null, new Vector3(1f, 0.75f, 1.3f));
+                A.Part("Tail", d, A.Sphere(0.15f * s), yellow, new Vector3(0f, 0.38f * s, -0.48f * s));
+                A.Part("Head", d, A.Sphere(0.24f * s), yellow, new Vector3(0f, 0.58f * s, 0.32f * s));
+                A.Part("Beak", d, A.Box(0.2f * s, 0.08f * s, 0.2f * s, 0.03f), beak, new Vector3(0f, 0.54f * s, 0.56f * s));
+                foreach (float x in new[] { -0.11f, 0.11f })
+                    A.Part("Eye", d, A.Sphere(0.04f * s), A.Ink, new Vector3(x * s, 0.64f * s, 0.5f * s));
+            }
+            var col = r.AddComponent<CapsuleCollider>();
+            col.center = new Vector3(0f, 1f, 0f);
+            col.radius = 4.6f;
+            col.height = 2f;
+            return r;
         }
 
         private static GameObject Fountain()
@@ -327,6 +421,8 @@ namespace LittleBuildersWorld.EditorTools
                 case "Log":
                     A.Part("Log", r.transform, A.Wheel(0.4f, 2.0f, 0.1f), A.DarkWood, new Vector3(0f, 0.4f, 0f));
                     A.Part("End", r.transform, A.Wheel(0.32f, 2.04f, 0.04f), A.Wood, new Vector3(0f, 0.4f, 0f));
+                    A.Part("Ring", r.transform, A.Wheel(0.17f, 2.06f, 0.03f), A.DarkWood, new Vector3(0f, 0.4f, 0f));
+                    A.Part("Leaf", r.transform, A.Sphere(0.18f), A.LeafLight, new Vector3(0.3f, 0.82f, 0.05f), null, new Vector3(1.2f, 0.5f, 0.8f));
                     radius = 1f;
                     break;
                 case "Crate":
@@ -346,49 +442,60 @@ namespace LittleBuildersWorld.EditorTools
             return r;
         }
 
-        private static GameObject Resident(string body, string shirt)
-        {
-            GameObject r = Root("Resident");
-            A.Part("Legs", r.transform, A.Box(0.5f, 0.6f, 0.32f, 0.12f), A.Colour("ResidentTrousers", "#3D5A80"), new Vector3(0f, 0.3f, 0f));
-            A.Part("Body", r.transform, A.Box(0.7f, 0.75f, 0.42f, 0.2f), A.Colour("ResidentShirt", shirt), new Vector3(0f, 0.95f, 0f));
-            A.Part("Head", r.transform, A.Sphere(0.36f), A.Colour("ResidentSkin", "#F1C27D"), new Vector3(0f, 1.62f, 0f));
-            A.Part("Hat", r.transform, A.Dome(0.4f, 0.28f), A.Colour("HardHat", body, 0.5f), new Vector3(0f, 1.78f, 0f));
-            A.Part("Smile", r.transform, A.Box(0.18f, 0.05f, 0.04f, 0.02f), A.Ink, new Vector3(0f, 1.52f, 0.34f));
-            foreach (float x in new[] { -0.12f, 0.12f })
-                A.Part("Eye", r.transform, A.Sphere(0.05f), A.Ink, new Vector3(x, 1.66f, 0.32f));
-            Transform arm = A.Pivot("WaveArm", r.transform, new Vector3(0.42f, 1.25f, 0f));
-            A.Part("Arm", arm, A.Box(0.18f, 0.6f, 0.18f, 0.08f), A.Colour("ResidentShirt", shirt), new Vector3(0f, 0.28f, 0f));
-            A.Part("Hand", arm, A.Sphere(0.12f), A.Colour("ResidentSkin", "#F1C27D"), new Vector3(0f, 0.62f, 0f));
-            A.Part("ArmL", r.transform, A.Box(0.18f, 0.6f, 0.18f, 0.08f), A.Colour("ResidentShirt", shirt), new Vector3(-0.45f, 0.95f, 0f));
-            return r;
-        }
+        private static GameObject Resident() => Person("Resident", "#6B4226", "#219EBC", 1f, false, "#2A9D8F");
 
         /// <summary>
-        /// A friendly figure: the foreman (hard hat) or a child (hair). Materials are named per colour, so every
-        /// figure keeps its own colours. "WaveArm" is animated by AmbientMotion.
+        /// A friendly figure: the foreman (hard hat, hi-vis stripes) or a child (hair). Big head, smile, rosy cheeks.
+        /// Materials are named per colour, so every figure keeps its own colours. "WaveArm" is animated by AmbientMotion.
         /// </summary>
-        private static GameObject Person(string name, string hatOrHair, string shirt, float scale, bool hardHat)
+        private static GameObject Person(string name, string hatOrHair, string shirt, float scale, bool hardHat, string trousers = "#3D5A80")
         {
             GameObject r = Root(name);
             Transform b = A.Pivot("Body", r.transform, Vector3.zero);
             b.localScale = Vector3.one * scale;
             Material shirtMat = A.Colour("Shirt_" + shirt.TrimStart('#'), shirt);
-            Material skin = A.Colour("ResidentSkin", "#F1C27D");
-            A.Part("Legs", b, A.Box(0.5f, 0.6f, 0.32f, 0.12f), A.Colour("ResidentTrousers", "#3D5A80"), new Vector3(0f, 0.3f, 0f));
-            A.Part("Torso", b, A.Box(0.7f, 0.75f, 0.42f, 0.2f), shirtMat, new Vector3(0f, 0.95f, 0f));
-            if (hardHat) A.Part("Stripe", b, A.Box(0.72f, 0.1f, 0.44f, 0.04f), A.Colour("HiVisStripe", "#FFF2B0"), new Vector3(0f, 1.05f, 0f));
-            A.Part("Head", b, A.Sphere(0.36f), skin, new Vector3(0f, 1.62f, 0f));
+            Material legMat = A.Colour("Trousers_" + trousers.TrimStart('#'), trousers);
+            Material skin = A.Skin;
+            Material shoe = A.Colour("Shoe", "#5A4636", 0.3f);
+            foreach (float x in new[] { -0.14f, 0.14f })
+            {
+                A.Part("Leg", b, A.Box(0.24f, 0.5f, 0.28f, 0.11f), legMat, new Vector3(x, 0.36f, 0f));
+                A.Part("Shoe", b, A.Box(0.26f, 0.15f, 0.36f, 0.07f), shoe, new Vector3(x, 0.08f, 0.04f));
+            }
+            A.Part("Torso", b, A.Box(0.68f, 0.72f, 0.46f, 0.25f), shirtMat, new Vector3(0f, 0.95f, 0f));
+            if (hardHat)
+                foreach (float y in new[] { 0.86f, 1.06f })
+                    A.Part("Stripe", b, A.Box(0.7f, 0.07f, 0.48f, 0.03f), A.Colour("HiVisStripe", "#FFF2B0"), new Vector3(0f, y, 0f));
+            A.Part("Head", b, A.Sphere(0.4f), skin, new Vector3(0f, 1.68f, 0f));
+            foreach (float x in new[] { -1f, 1f })
+            {
+                A.Part("Ear", b, A.Sphere(0.09f), skin, new Vector3(x * 0.39f, 1.66f, 0f), null, new Vector3(0.6f, 1f, 1f));
+                A.Part("Eye", b, A.Sphere(0.075f), A.Ink, new Vector3(x * 0.14f, 1.73f, 0.35f), null, new Vector3(1f, 1.25f, 0.6f));
+                A.Part("Shine", b, A.Sphere(0.026f), A.White, new Vector3(x * 0.14f + 0.025f, 1.76f, 0.4f));
+                A.Part("Cheek", b, A.Sphere(0.075f), A.Cheek, new Vector3(x * 0.24f, 1.58f, 0.32f), null, new Vector3(1f, 0.6f, 0.4f));
+            }
+            A.Part("Nose", b, A.Sphere(0.06f), A.Colour("Nose", "#E8A87C", 0.3f), new Vector3(0f, 1.63f, 0.39f));
+            // Open smile: an upside-down dome pressed into the face.
+            A.Part("Smile", b, A.Dome(0.12f, 0.08f), A.Colour("Mouth", "#B5423C", 0.3f), new Vector3(0f, 1.54f, 0.35f), new Vector3(200f, 0f, 0f), new Vector3(1f, 1f, 0.45f));
             Material top = A.Colour((hardHat ? "HardHat_" : "Hair_") + hatOrHair.TrimStart('#'), hatOrHair, hardHat ? 0.5f : 0.15f);
-            A.Part(hardHat ? "Hat" : "Hair", b, A.Dome(hardHat ? 0.4f : 0.37f, hardHat ? 0.28f : 0.22f), top, new Vector3(0f, hardHat ? 1.78f : 1.74f, hardHat ? 0f : -0.03f));
-            if (hardHat) A.Part("Brim", b, A.Disc(0.46f, 0.05f, 0.02f, 20), top, new Vector3(0f, 1.78f, 0.03f));
-            A.Part("Smile", b, A.Box(0.18f, 0.05f, 0.04f, 0.02f), A.Ink, new Vector3(0f, 1.52f, 0.34f));
-            foreach (float x in new[] { -0.12f, 0.12f })
-                A.Part("Eye", b, A.Sphere(0.05f), A.Ink, new Vector3(x, 1.66f, 0.32f));
+            if (hardHat)
+            {
+                A.Part("Hat", b, A.Dome(0.44f, 0.32f), top, new Vector3(0f, 1.82f, 0f));
+                A.Part("Brim", b, A.Disc(0.52f, 0.05f, 0.02f, 20), top, new Vector3(0f, 1.82f, 0.05f));
+                A.Part("HatBadge", b, A.Sphere(0.07f), A.White, new Vector3(0f, 1.98f, 0.38f), null, new Vector3(1f, 1f, 0.4f));
+            }
+            else
+            {
+                A.Part("Hair", b, A.Dome(0.43f, 0.3f), top, new Vector3(0f, 1.75f, -0.03f));
+                A.Part("Fringe", b, A.Sphere(0.16f), top, new Vector3(0.12f, 1.98f, 0.25f), null, new Vector3(1.4f, 0.7f, 0.8f));
+                A.Part("Tuft", b, A.Sphere(0.12f), top, new Vector3(-0.05f, 2.1f, -0.05f));
+            }
+            A.Part("ArmL", b, A.Box(0.19f, 0.6f, 0.21f, 0.09f), shirtMat, new Vector3(-0.44f, 0.98f, 0f), new Vector3(0f, 0f, -10f));
+            A.Part("HandL", b, A.Sphere(0.11f), skin, new Vector3(-0.5f, 0.64f, 0f));
             Transform arm = A.Pivot("WaveArm", r.transform, new Vector3(0.42f, 1.25f, 0f) * scale);
             arm.localScale = Vector3.one * scale;
-            A.Part("Arm", arm, A.Box(0.18f, 0.6f, 0.18f, 0.08f), shirtMat, new Vector3(0f, 0.28f, 0f));
-            A.Part("Hand", arm, A.Sphere(0.12f), skin, new Vector3(0f, 0.62f, 0f));
-            A.Part("ArmL", b, A.Box(0.18f, 0.6f, 0.18f, 0.08f), shirtMat, new Vector3(-0.45f, 0.95f, 0f));
+            A.Part("Arm", arm, A.Box(0.19f, 0.6f, 0.21f, 0.09f), shirtMat, new Vector3(0f, 0.28f, 0f));
+            A.Part("Hand", arm, A.Sphere(0.11f), skin, new Vector3(0f, 0.62f, 0f));
             return r;
         }
 

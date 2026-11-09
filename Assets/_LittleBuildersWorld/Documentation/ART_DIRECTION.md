@@ -19,6 +19,25 @@ Toy-like, rounded, bright but balanced. Everything is built from rounded boxes, 
 Vehicles are slightly exaggerated (big wheels, tall cabs, big blades/buckets) and each has a face (eyes on the
 windscreen) — friendly but not identical: different body shapes and colours.
 
+## Detail pass (v0.3.0)
+
+* **Seen from behind first.** The camera follows the vehicle, so every machine has a readable back: tail lights
+  and indicators (slightly emissive), grilles, plates, hazard chevrons, mud flaps, a bulldozer ripper.
+* Friendly faces: eyes plus rosy cheeks on every machine; people have big heads, open smiles, cheeks, shoes.
+* Treaded tyres with coloured hub caps (secondary colour, repaints with the vehicle).
+* World dressing: rolling hills on the horizon (no flat edge), a duck pond, flowers and grass tufts, framed
+  windows with flower boxes, real-looking potholes, patterned play mats, red windmill sails, glowing lamps.
+
+### Budget rules (Redmi A3, PowerVR GE8320)
+
+* Rounded-box bevel detail follows bevel size (≤0.05 m → chamfer, ≤0.1 m → 2 steps, else 3); small spheres use
+  fewer facets. Little parts never use the full-detail meshes.
+* Vehicle parts that share a parent and material are merged into one mesh at build time (`VehicleBuilder.MergeParts`).
+* Hundreds of meadow pieces are a few combined meshes, no shadows. Static scenery is static-batched.
+* Check with `Tools/showcase.sh` (renders `Logs/Showcase/*.png` and logs scene vertex counts). Town after the
+  detail pass: ~490k vertices total in the scene (before: ~513k).
+* No post-processing / bloom; emission is used sparingly for lights.
+
 ## Palette
 
 | Use | Hex |

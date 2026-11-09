@@ -8,7 +8,7 @@ No downloaded models, textures, sounds or music. No third-party brands or charac
 |---|---|---|---|
 | Vehicles | `Prefabs/Vehicles/{Excavator,DumpTruck,Bulldozer,RoadRoller}.prefab` | `VehicleBuilder` — procedural rounded meshes, custom crawler-track mesh | **Custom procedural models** (stylised, final for first release; can be swapped for artist models without code changes — gameplay only needs the named pivots) |
 | Vehicle portraits, app icon | `Art/UI/Portraits/*.png`, `Art/UI/AppIcon.png` | `PortraitRenderer` renders the prefabs | Generated |
-| Environment props | `Prefabs/Environment/*` (trees, bush, fence, flag, lamp, cloud, shed, water tower, windmill, 4 town houses, hopper, brick pallet, skip, barrier, sign post, soil mounds, resident, foreman, three children, bunting, balloon arch, fountain, rainbow arch, parts pallet; playground: sandpit, slide, swings, climbing frame, roundabout, bench) | `PropBuilder` | Custom procedural, toy style |
+| Environment props | `Prefabs/Environment/*` (trees, bush, fence, flag, lamp, cloud, shed, water tower, windmill, 4 town houses, hopper, brick pallet, skip, barrier, sign post, soil mounds, resident, foreman, three children, bunting, balloon arch, fountain, rainbow arch, parts pallet; playground: sandpit, slide, swings, climbing frame, roundabout, bench; duck pond) | `PropBuilder` | Custom procedural, toy style |
 | Debris | `Prefabs/Activities/Debris{Rock,Log,Crate,Cone}.prefab` | `PropBuilder` | Custom procedural |
 | House parts, roadworks patches, playground mats, markers, guidance arrow | built into `ConstructionTown.unity` | `TownBuilder` | Custom procedural |
 | Particles | `Prefabs/VFX/FX_{Sparkle,Confetti,Poof,Smoke}.prefab` | `PropBuilder` | Generated |
@@ -29,6 +29,6 @@ were adapted from the owner's Little Burger World project (same author), namespa
 
 ## Temporary / placeholder
 
-None of the shipped visuals are greybox placeholders. They are deliberately simple procedural models; a future
-art pass could replace them with authored meshes using the same pivot names (`Body`, `Cab`, `Boom`, `Stick`,
+None of the shipped visuals are greybox placeholders. They are procedural models, given a detail pass in v0.3.0
+(still 100% generated in code: no third-party models or textures were added). A future pass could replace them with authored meshes using the same pivot names (`Body`, `Cab`, `Boom`, `Stick`,
 `Bucket`, `BedPivot`, `Wheel`, `SteerPivot`, `Beacon`, `BubbleAnchor`).

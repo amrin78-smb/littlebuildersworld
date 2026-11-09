@@ -43,7 +43,7 @@ namespace LittleBuildersWorld.Activities
                     GameServices.Instance?.Audio.Play(SfxId.Thud);
                     AddProgress(1, p);
                 }
-                else if (OutOfArea(p))
+                else if (OutOfArea(p) || Wedged(d, p))
                 {
                     d.ResetHome(true);
                     GameServices.Instance?.Audio.Play(SfxId.Pop);
@@ -59,6 +59,24 @@ namespace LittleBuildersWorld.Activities
                 return Mathf.Abs(p.x - m_AreaCentre.x) > m_AreaHalfSize.x || Mathf.Abs(p.z - m_AreaCentre.z) > m_AreaHalfSize.y;
             return (p - FocusPosition).sqrMagnitude > m_BoundsRadius * m_BoundsRadius;
         }
+
+        /// <summary>
+        /// Resting against the fence on the far side from the stripes: there is no room for the bulldozer to get behind
+        /// it, so it could never be pushed in. After a short rest it goes home (where it can be pushed) instead.
+        /// </summary>
+        public bool Wedged(PushableDebris d, Vector3 p)
+        {
+            if (m_AreaHalfSize.x <= 0f || m_AreaHalfSize.y <= 0f || Time.time - d.LastPushedTime < WedgeRestSeconds) return false;
+            Vector3 toTarget = m_Target.transform.position - p;
+            toTarget.y = 0f;
+            if (toTarget.sqrMagnitude < 0.01f) return false;
+            Vector3 behind = p - toTarget.normalized * WedgeRoom;
+            return OutOfArea(behind) && !OutOfArea(d.HomePosition - toTarget.normalized * WedgeRoom);
+        }
+
+        /// <summary>Room the bulldozer needs behind a piece to push it (blade to tail is about 4 m; 3.5 m to line up).</summary>
+        public const float WedgeRoom = 3.5f;
+        public const float WedgeRestSeconds = 4f;
 
         /// <summary>The arrow leads to the nearest piece still to push (to the stripes while one is being pushed).</summary>
         public override bool TryGetGuidance(Vehicles.Vehicle vehicle, out Vector3 position, out int priority)

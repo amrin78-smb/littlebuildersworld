@@ -121,6 +121,29 @@ namespace LittleBuildersWorld.Tests
         }
 
         [UnityTest]
+        public IEnumerator Debris_Wedged_Against_The_Far_Fence_Goes_Home()
+        {
+            LittleBuildersWorld.World.PushableDebris crate = null, other = null;
+            foreach (var d in LittleBuildersWorld.World.PushableDebris.All)
+            {
+                if (Vector3.Distance(d.HomePosition, new Vector3(29f, 0f, 84f)) < 1.5f) crate = d;
+                else if (other == null && d.HomePosition.z > 60f) other = d;
+            }
+            Assert.IsNotNull(crate, "a piece starts at (29,84)");
+            Assert.IsNotNull(other, "another house piece");
+            Vector3 home = crate.HomePosition;
+            // Against the west fence of the house plot (the stripes are east): no room behind it for the bulldozer.
+            crate.PushTo(new Vector3(22.5f, 0f, 84f));
+            // A piece left in the open middle of the plot stays where it is.
+            other.PushTo(new Vector3(31f, 0f, 80f));
+            yield return new WaitForSeconds(2f);
+            Assert.Less(Vector3.Distance(crate.transform.position, new Vector3(22.5f, 0f, 84f)), 0.3f, "no pop while it was just pushed");
+            yield return new WaitForSeconds(4f);
+            Assert.Less(Vector3.Distance(crate.transform.position, home), 0.5f, "the wedged crate went home");
+            Assert.Less(Vector3.Distance(other.transform.position, new Vector3(31f, other.transform.position.y, 80f)), 0.3f, "a reachable piece is left alone");
+        }
+
+        [UnityTest]
         public IEnumerator Hold_Button_Releases_When_No_Pointer_Is_Down()
         {
             var interaction = Object.FindFirstObjectByType<VehicleInteraction>();

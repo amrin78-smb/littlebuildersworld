@@ -18,6 +18,7 @@ fully offline.
 | `Tools/setup.sh` | Regenerate all art, audio, data, prefabs, scenes; validate |
 | `Tools/run_tests.sh [EditMode\|PlayMode\|all]` | Unit + scene tests |
 | `Tools/autopilot.sh` | Linux test player + automated full play-through (screenshots/report in `Logs/AutoPilot/`) |
+| `Tools/showcase.sh` | Art review: renders vehicles, props and town views to `Logs/Showcase/` and logs scene vertex counts |
 | `Tools/build_android.sh [release]` | APK + `Tools/verify_apk.sh` (ABIs, PowerVR filter, orientation) |
 | `Tools/voice/generate_voice.sh [key…]` | Regenerate the helper's voice clips offline from `Tools/voice/voice_lines.json` (Kokoro EN, VachanaTTS TH), then run `Tools/setup.sh` |
 

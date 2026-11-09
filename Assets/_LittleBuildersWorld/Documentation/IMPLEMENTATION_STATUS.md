@@ -1,8 +1,8 @@
 # Implementation Status — Little Builders World
 
-_Last updated: 2026-11-09. "Verified" means checked by an automated test or the automated play-through in this
-repository. v0.1.0-test was played by the owner on a Galaxy S25 Ultra ("plays ok"); the helper, playground and
-physics fix below (v0.2.0-test) are not yet tested on a phone._
+_Last updated: 2026-11-10. "Verified" means checked by an automated test or the automated play-through in this
+repository. v0.2.1 was played by the owner on a Redmi A3, a Galaxy S25 Ultra and a TCL Tab 10 ("plays well",
+"voice is ok"). The v0.3.0 art pass below is not yet tested on a phone._
 
 ## Baseline
 
@@ -18,10 +18,10 @@ physics fix below (v0.2.0-test) are not yet tested on a phone._
 |---|---|
 | Generator + validator (`Tools/setup.sh`) | **Passes** — no empty references, scenes and prefabs complete, ARM/PowerVR settings present |
 | EditMode tests | **34 / 34 pass** (adds helper timing, language and Thai mark placement) |
-| PlayMode tests (real town scene) | **5 / 5 pass** (adds: steering turns and stays grounded/upright; bulldozer pushes the house crate onto the stripes and it counts) |
-| Automated play-through (`Tools/autopilot.sh`) | Run 17 (v0.2.1): **ALL 121 CHECKS PASSED** — 24/24 stars, all 8 unlocks; house, roadworks and playground complete and restored after reload; helper lines and Thai switch checked; steering check 27°. 3 route legs needed a nudge (low FPS), logged as warnings. (The stuck-test spawn was moved off the fence afterwards; not re-run.) |
+| PlayMode tests (real town scene) | **6 / 6 pass** (steering turns and stays grounded/upright; bulldozer pushes the house crate onto the stripes and it counts; a piece wedged against the far fence goes home, a reachable one stays) |
+| Automated play-through (`Tools/autopilot.sh`) | Run 19 (v0.3.0 art pass): **ALL 121 CHECKS PASSED** — 24/24 stars, all 8 unlocks, all projects restored after reload; 7 route legs needed a nudge (test-driver paths, warnings only). Run 18 (before the wedge fix) failed playground clearing: the test bulldozer shoved a rock against the west fence where it could not get behind it — fixed in the game (see Art pass). Earlier: run 17 (v0.2.1): **ALL 121 CHECKS PASSED** — 24/24 stars, all 8 unlocks; house, roadworks and playground complete and restored after reload; helper lines and Thai switch checked; steering check 27°. 3 route legs needed a nudge (low FPS), logged as warnings. (The stuck-test spawn was moved off the fence afterwards; not re-run.) |
 | Android release APK v0.2.1 (code 3) | **Builds** (~60 MB); `verify_apk.sh`: `arm64-v8a` + `armeabi-v7a` ✔, `.*PowerVR.*` filter ✔, landscape ✔, **no INTERNET permission** ✔ |
-| On a physical phone | v0.1.0 played on a Galaxy S25 Ultra by the owner ("plays ok"; asked for voice, text bubbles, more content → this update). v0.2.0 not yet tested on a phone; Redmi A3 still untested |
+| On a physical phone | v0.2.1 played by the owner on the Redmi A3 ("plays well so far"), Galaxy S25 Ultra and TCL Tab 10 tablet ("works fine", "voice is ok"). Close-and-relaunch, Thai text and frame-rate numbers not yet reported. v0.3.0 not yet on a phone |
 
 ## Feature status
 
@@ -56,7 +56,7 @@ physics fix below (v0.2.0-test) are not yet tested on a phone._
 | Stuck/out-of-world recovery | Done, verified |
 | Vehicles staying on the ground | **Fixed** — the play-through's new float diagnostic found vehicles (mostly the truck) rising 0.4–1.8 m: the body could tilt despite the rotation lock, and an airborne vehicle kept any upward speed. The controller now rebuilds an upright rotation every step and never rises while airborne; 0 float events since |
 | Tablet / aspect-ratio scaling (width match below 16:9), safe areas | Implemented; only 16:9 (1280×720) exercised automatically |
-| Android performance | **Unverified** — needs the Redmi A3 |
+| Android performance | Owner reports v0.2.1 plays well on the Redmi A3; not profiled (no FPS numbers) |
 
 ## Play-through reliability
 
@@ -76,6 +76,22 @@ Game bugs the play-through found and that are fixed: clearing bounds measured fr
 reset every tick); rocks could be pushed through a fence and lost (now they return to their start); vehicles could
 ride up onto fences (colliders are now taller invisible walls); a white panel covered the truck bed; crawler-track
 faces were inside out; a null reference during scene unload.
+
+## Art pass (v0.3.0)
+
+All still generated in code (no third-party art). Checked with `Tools/showcase.sh` renders and in-game screenshots.
+
+* Vehicles: readable backs (tail lights/indicators, plates, grilles, hazard chevrons, mud flaps, bulldozer ripper),
+  treaded tyres with repaintable hub caps, mirrors, exhausts, track rollers, excavator rams, cheeks on every face.
+* People: rounder figures with big heads, smiles, cheeks, ears, shoes; the resident uses the same figure.
+* World: horizon hills + far ground (no visible world edge), duck pond (bobbing ducks), ~150 flowers and 200 grass
+  tufts as a few combined meshes, framed windows/flower boxes, windmill sails, glowing lamps, tower braces,
+  realistic potholes, dotted play mats, framed windows on the built house.
+* Fixed: the playground roundabout spun like a wheel (new `AmbientMotion.Kind.Turn`).
+* Budget: bevel/sphere detail scales with size and vehicle parts are merged per material, so the town scene went
+  from ~513k to ~490k vertices despite the extra detail. Not yet measured on the Redmi A3.
+* Gameplay fix found by the play-through: a piece pushed against the fence on the far side from the stripes (no
+  room for the bulldozer behind it) now returns to its start after 4 s at rest (`BulldozerClearingActivity.Wedged`).
 
 ## Bug sweep (v0.2.1)
 
