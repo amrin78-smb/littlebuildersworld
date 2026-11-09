@@ -78,6 +78,12 @@ namespace LittleBuildersWorld.Guide
             if (until > m_HoldUntil) m_HoldUntil = until;
         }
 
+        /// <summary>The line was not actually heard (voice busy or off), so it does not count against the cooldown.</summary>
+        public void ForgetSpoken(string key)
+        {
+            if (key != null) m_LastSpoken.Remove(key);
+        }
+
         /// <summary>Forget the shown hint so it is shown again on the next chance (e.g. after the language changed).</summary>
         public void Refresh() => m_Current = null;
 

@@ -109,6 +109,8 @@ namespace LittleBuildersWorld.Input
             bool joystick = c.steering == SteeringMode.Joystick;
             if (m_ButtonSteering != null) m_ButtonSteering.SetActive(!joystick);
             if (m_JoystickSteering != null) m_JoystickSteering.SetActive(joystick);
+            foreach (Vehicle v in Vehicle.All)
+                if (v != null && v.Controller != null) v.Controller.SetSteerSensitivity(c.steerSensitivity); // applies at once, even mid-drive
         }
 
         /// <summary>Automated tests and the demo: drive without touching anything. null = back to normal input.</summary>

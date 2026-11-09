@@ -16,6 +16,7 @@ namespace LittleBuildersWorld.UI
 
         private bool m_Holding;
         private float m_Held;
+        private float m_GraceUntil;
 
         public event Action Confirmed;
 
@@ -25,6 +26,7 @@ namespace LittleBuildersWorld.UI
         {
             m_Holding = true;
             m_Held = 0f;
+            m_GraceUntil = Time.unscaledTime + 0.1f;
         }
 
         public void OnPointerUp(PointerEventData e) => Cancel();
@@ -40,6 +42,8 @@ namespace LittleBuildersWorld.UI
         private void Update()
         {
             if (!m_Holding) return;
+            // A lost pointer-up (notification shade, app switch) must not leave the hold running.
+            if (Time.unscaledTime > m_GraceUntil && !LittleBuildersWorld.Input.PointerWatchdog.AnyPointerDown()) { Cancel(); return; }
             m_Held += Time.unscaledDeltaTime;
             SetFill(m_Held / m_HoldSeconds);
             if (m_Held >= m_HoldSeconds)
@@ -50,6 +54,8 @@ namespace LittleBuildersWorld.UI
         }
 
         private void OnDisable() => Cancel();
+        private void OnApplicationPause(bool paused) { if (paused) Cancel(); }
+        private void OnApplicationFocus(bool focused) { if (!focused) Cancel(); }
 
         public void SimulateConfirm() => Confirmed?.Invoke();
 

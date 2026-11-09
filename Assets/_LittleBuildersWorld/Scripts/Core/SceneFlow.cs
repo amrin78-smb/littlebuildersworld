@@ -21,7 +21,7 @@ namespace LittleBuildersWorld.Core
 
         private void Awake()
         {
-            var canvasGo = new GameObject("[Fade]", typeof(Canvas), typeof(CanvasGroup));
+            var canvasGo = new GameObject("[Fade]", typeof(Canvas), typeof(CanvasGroup), typeof(GraphicRaycaster)); // blocks taps while fading
             canvasGo.transform.SetParent(transform, false);
             var canvas = canvasGo.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;

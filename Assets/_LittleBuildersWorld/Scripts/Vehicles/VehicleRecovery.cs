@@ -44,7 +44,9 @@ namespace LittleBuildersWorld.Vehicles
         public void Recover()
         {
             m_StuckTime = 0f;
-            RecoveryPoint point = RecoveryPoint.Nearest(transform.position);
+            // The nearest road spot that is free: never drop a vehicle onto a parked one or into a fence.
+            RecoveryPoint point = RecoveryPoint.NearestWhere(transform.position,
+                p => m_Controller.IsClear(p.transform.position + Vector3.up * 0.3f, p.transform.rotation));
             var vehicle = GetComponent<Vehicle>();
             vehicle?.Tool?.CancelToRest();
             Vector3 from = transform.position;

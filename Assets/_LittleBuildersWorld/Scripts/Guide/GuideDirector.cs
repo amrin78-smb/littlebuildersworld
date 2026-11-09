@@ -29,6 +29,7 @@ namespace LittleBuildersWorld.Guide
         private float m_StartTime;
         private string m_Language;
         private Vehicle m_LastVehicle;
+        private bool m_PendingPaint;
 
         public GuideScheduler Scheduler => m_Scheduler;
         /// <summary>Key of the last line shown (tests and the play-through read it).</summary>
@@ -95,6 +96,11 @@ namespace LittleBuildersWorld.Guide
                 {
                     m_LastVehicle = m_Interaction.Current;
                     m_Scheduler.Refresh(); // just got in or out: say the fresh hint even if the words repeat
+                    if (m_PendingPaint && m_LastVehicle == null)
+                    {
+                        m_PendingPaint = false; // the paint button is visible now (on foot)
+                        m_Scheduler.PushEvent("unlock_paint", 90);
+                    }
                 }
                 m_Scheduler.SetHint(ComputeHint(), now);
             }
@@ -115,7 +121,9 @@ namespace LittleBuildersWorld.Guide
             if (v.Tool != null && v.Tool.IsBusy) return null;
             var recovery = v.GetComponent<VehicleRecovery>();
             if (recovery != null && recovery.SeemsStuck) return "stuck";
-            if (m_Actions != null && m_Actions.HasAction)
+            // A low-priority "tip it anywhere" offer only becomes the hint when no job wants this machine.
+            bool hasJob = GuidanceRegistry.TryFind(v, out _, out IGuidanceTarget job);
+            if (m_Actions != null && m_Actions.HasAction && (m_Actions.Current.Priority >= 5 || !hasJob))
             {
                 switch (m_Actions.Current.Icon)
                 {
@@ -125,9 +133,9 @@ namespace LittleBuildersWorld.Guide
                     case ActionIcon.Unload: return "do_unload";
                 }
             }
-            if (GuidanceRegistry.TryFind(v, out _, out IGuidanceTarget target))
+            if (hasJob)
             {
-                string key = target.GuideHint(v);
+                string key = job.GuideHint(v);
                 return m_Library == null || m_Library.Has(key) ? key : "follow_arrow";
             }
             return "no_job";
@@ -164,6 +172,11 @@ namespace LittleBuildersWorld.Guide
         private void OnUnlocked(UnlockDefinition u)
         {
             if (u == null) return;
+            if (u.kind == UnlockKind.Paint && m_Interaction != null && m_Interaction.IsDriving)
+            {
+                m_PendingPaint = true; // "tap the paint button" only makes sense on foot, where the button is
+                return;
+            }
             string key = u.kind == UnlockKind.Paint ? "unlock_paint" : u.kind == UnlockKind.Area ? "unlock_area" : "unlock_decor";
             m_Scheduler.PushEvent(key, 90);
         }
@@ -195,10 +208,13 @@ namespace LittleBuildersWorld.Guide
         {
             if (m_Library == null) return;
             if (!m_Library.TryGet(say.Key, m_Language, out string text, out AudioClip clip)) return;
+            string previous = LastShownKey;
             LastShownKey = say.Key;
             float length = clip != null ? clip.length : 2.5f;
             GameServices s = GameServices.Instance;
-            bool spoke = say.Speak && s != null && s.Audio.PlayVoice(clip, say.IsEvent);
+            // A new instruction may cut off the previous one; the same line never interrupts itself.
+            bool spoke = say.Speak && s != null && s.Audio.PlayVoice(clip, say.IsEvent || say.Key != previous);
+            if (say.Speak && !spoke && !say.IsEvent) m_Scheduler.ForgetSpoken(say.Key); // not heard: may be said next time
             if (say.IsEvent) m_Scheduler.Hold(now + Mathf.Max(2.5f, (spoke ? length : 1.5f) + 0.6f));
             Sprite icon = IconFor(say.Key, out Color disc);
             if (m_Bubble != null) m_Bubble.Show(text, icon, disc, length + 3f);

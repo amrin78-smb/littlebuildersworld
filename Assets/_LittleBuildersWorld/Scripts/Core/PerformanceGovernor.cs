@@ -23,10 +23,26 @@ namespace LittleBuildersWorld.Core
 
         private void Start() => m_WarmUpUntil = Time.unscaledTime + 6f;
 
+        // Scene loads and returning from the background stall a few frames; never judge the phone by those.
+        private void OnEnable() => UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        private void OnDisable() => UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene s, UnityEngine.SceneManagement.LoadSceneMode m) => Restart(4f);
+        private void OnApplicationPause(bool paused) { if (!paused) Restart(4f); }
+        private void OnApplicationFocus(bool focused) { if (focused) Restart(4f); }
+
+        private void Restart(float warmUp)
+        {
+            m_Elapsed = 0f;
+            m_Frames = 0;
+            m_WarmUpUntil = Mathf.Max(m_WarmUpUntil, Time.unscaledTime + warmUp);
+        }
+
         private void Update()
         {
             if (Time.timeScale <= 0f) return;
-            m_Elapsed += Time.unscaledDeltaTime;
+            float dt = Time.unscaledDeltaTime;
+            if (dt > 0.25f) { m_Elapsed = 0f; m_Frames = 0; return; } // a hitch, not the steady frame rate
+            m_Elapsed += dt;
             m_Frames++;
             if (m_Elapsed < SampleSeconds) return;
             AverageFps = m_Frames / m_Elapsed;

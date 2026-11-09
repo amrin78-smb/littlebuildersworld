@@ -89,6 +89,38 @@ namespace LittleBuildersWorld.Tests
         }
 
         [UnityTest]
+        public IEnumerator Bulldozer_Pushes_House_Debris_Onto_The_Stripes()
+        {
+            var interaction = Object.FindFirstObjectByType<VehicleInteraction>();
+            var input = Object.FindFirstObjectByType<TouchInputController>();
+            LittleBuildersWorld.Activities.BulldozerClearingActivity clear = null;
+            foreach (var a in LittleBuildersWorld.Activities.ActivityBase.All)
+                if (a.Id == "house_clear") clear = (LittleBuildersWorld.Activities.BulldozerClearingActivity)a;
+            Assert.IsNotNull(clear);
+            Assert.IsTrue(clear.IsOpen, "clearing is open in a fresh game");
+            LittleBuildersWorld.World.PushableDebris crate = null;
+            foreach (var d in LittleBuildersWorld.World.PushableDebris.All)
+                if (Vector3.Distance(d.transform.position, new Vector3(29f, 0f, 84f)) < 1.5f) crate = d;
+            Assert.IsNotNull(crate, "a piece starts at (29,84)");
+            Vehicle dozer = Get(VehicleType.Bulldozer);
+            Assert.IsTrue(interaction.Enter(dozer));
+            dozer.Controller.Teleport(new Vector3(24.5f, 0.05f, 84f), Quaternion.Euler(0f, 90f, 0f));
+            yield return new WaitForFixedUpdate();
+            input.SetScriptedInput(new DriveInput(0f, 0.7f, 0f));
+            int before = clear.Progress.Progress;
+            for (int i = 0; i < 600 && !crate.IsCleared; i++)
+            {
+                yield return new WaitForFixedUpdate();
+                if (i % 25 == 0) Debug.Log($"[LBW Test] t={i * 0.02f:0.0} dozer {dozer.transform.position} crate {crate.transform.position} cleared={crate.IsCleared}");
+            }
+            input.SetScriptedInput(null);
+            Debug.Log($"[LBW Test] end dozer {dozer.transform.position} crate {crate.transform.position} cleared={crate.IsCleared}");
+            Assert.IsTrue(crate.IsCleared, "the crate pushed east reaches the stripes and is cleared");
+            Assert.AreEqual(before + 1, clear.Progress.Progress);
+            interaction.Exit();
+        }
+
+        [UnityTest]
         public IEnumerator Hold_Button_Releases_When_No_Pointer_Is_Down()
         {
             var interaction = Object.FindFirstObjectByType<VehicleInteraction>();

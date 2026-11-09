@@ -76,6 +76,12 @@ namespace LittleBuildersWorld.Activities
             {
                 ActivityRecord r = s.Progression.GetRecord(m_Id);
                 Progress.Restore(r.stage, r.progress);
+                if (m_Repeatable && Progress.IsComplete)
+                {
+                    // Saved in the moment before it restarted: free play starts fresh (rewards are keyed, never twice).
+                    Progress.Restart();
+                    s.Progression.Commit(m_Id, 0, 0, false);
+                }
             }
             m_Restored = true;
             ApplyState(true);

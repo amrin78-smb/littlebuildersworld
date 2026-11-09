@@ -16,6 +16,8 @@ namespace LittleBuildersWorld.Activities
         [Tooltip("Debris further than this from the activity centre goes home.")] [SerializeField] private float m_BoundsRadius = 30f;
         [SerializeField] private Transform[] m_ClearSlots = new Transform[0];
         [SerializeField] private GameObject m_OpenVisual;
+        [Tooltip("Inside of the fence (XZ box). Debris outside it pops home. Zero size = use the bounds radius.")] [SerializeField] private Vector3 m_AreaCentre;
+        [SerializeField] private Vector2 m_AreaHalfSize;
 
         private int m_Cleared;
 
@@ -41,12 +43,43 @@ namespace LittleBuildersWorld.Activities
                     GameServices.Instance?.Audio.Play(SfxId.Thud);
                     AddProgress(1, p);
                 }
-                else if ((p - FocusPosition).sqrMagnitude > m_BoundsRadius * m_BoundsRadius || p.y < -2f)
+                else if (OutOfArea(p))
                 {
                     d.ResetHome(true);
                     GameServices.Instance?.Audio.Play(SfxId.Pop);
                 }
             }
+        }
+
+        /// <summary>Outside the fenced play area (or fallen out of the world): unreachable, so it goes home.</summary>
+        public bool OutOfArea(Vector3 p)
+        {
+            if (p.y < -2f) return true;
+            if (m_AreaHalfSize.x > 0f && m_AreaHalfSize.y > 0f)
+                return Mathf.Abs(p.x - m_AreaCentre.x) > m_AreaHalfSize.x || Mathf.Abs(p.z - m_AreaCentre.z) > m_AreaHalfSize.y;
+            return (p - FocusPosition).sqrMagnitude > m_BoundsRadius * m_BoundsRadius;
+        }
+
+        /// <summary>The arrow leads to the nearest piece still to push (to the stripes while one is being pushed).</summary>
+        public override bool TryGetGuidance(Vehicles.Vehicle vehicle, out Vector3 position, out int priority)
+        {
+            if (!base.TryGetGuidance(vehicle, out position, out priority)) return false;
+            Vector3 from = vehicle.transform.position;
+            float best = float.MaxValue;
+            for (int i = 0; i < m_Debris.Length; i++)
+            {
+                PushableDebris d = m_Debris[i];
+                if (d == null || d.IsCleared) continue;
+                Vector3 p = d.transform.position;
+                float sq = (p.x - from.x) * (p.x - from.x) + (p.z - from.z) * (p.z - from.z);
+                if (Time.time - d.LastPushedTime < 0.5f && sq < 36f && m_Target != null)
+                {
+                    position = m_Target.transform.position;
+                    return true;
+                }
+                if (sq < best) { best = sq; position = p; }
+            }
+            return true;
         }
 
         private Vector3 Slot(int index)

@@ -110,6 +110,22 @@ namespace LittleBuildersWorld.Vehicles
             if (!driven) Park();
         }
 
+        /// <summary>True if this vehicle's body box would not overlap anything solid at that pose (ground excluded).</summary>
+        public bool IsClear(Vector3 position, Quaternion rotation)
+        {
+            var box = GetComponent<BoxCollider>();
+            if (box == null) return true;
+            Vector3 centre = position + rotation * box.center;
+            float bottom = centre.y - box.size.y * 0.5f;
+            foreach (Collider c in Physics.OverlapBox(centre, box.size * 0.5f - Vector3.one * 0.05f, rotation, ~0, QueryTriggerInteraction.Ignore))
+            {
+                if (c.transform.IsChildOf(transform)) continue;
+                if (c.bounds.max.y < bottom + 0.1f) continue; // the ground under it
+                return false;
+            }
+            return true;
+        }
+
         private void FixedUpdate()
         {
             if (m_Body.isKinematic) return;
@@ -124,7 +140,7 @@ namespace LittleBuildersWorld.Vehicles
             ProbeGround();
 
             Vector3 velocity = m_Body.linearVelocity;
-            Vector3 forward = transform.forward;
+            Vector3 forward = m_Body.rotation * Vector3.forward; // physics pose, not the interpolated transform
             MeasuredSpeed = Vector3.Dot(new Vector3(velocity.x, 0f, velocity.z), new Vector3(forward.x, 0f, forward.z).normalized);
             m_Model.ReconcileMeasuredSpeed(MeasuredSpeed);
             m_Model.Step(input, dt);
@@ -133,7 +149,7 @@ namespace LittleBuildersWorld.Vehicles
             // (a tilted collision box could otherwise "climb" and lift the vehicle off the ground).
             float yaw = m_Body.rotation.eulerAngles.y + m_Model.YawRate * dt;
             Quaternion upright = Quaternion.Euler(0f, yaw, 0f);
-            if (Quaternion.Angle(m_Body.rotation, upright) > 0.01f) m_Body.MoveRotation(upright);
+            m_Body.MoveRotation(upright); // always: tiny per-step turns (gentle steering) must never be dropped
 
             Vector3 flatForward = new Vector3(forward.x, 0f, forward.z).normalized;
             Vector3 drive;

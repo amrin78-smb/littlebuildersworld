@@ -102,10 +102,10 @@ namespace LittleBuildersWorld.Save
             }
         }
 
-        /// <summary>Adult-confirmed reset. Keeps audio and control settings.</summary>
+        /// <summary>Adult-confirmed reset. Keeps audio, control and language settings.</summary>
         public void ResetProgress()
         {
-            var fresh = new SaveData { audio = Data.audio, controls = Data.controls };
+            var fresh = new SaveData { audio = Data.audio, controls = Data.controls, language = Data.language };
             Data = fresh;
             SaveNow();
             ProgressReset?.Invoke();

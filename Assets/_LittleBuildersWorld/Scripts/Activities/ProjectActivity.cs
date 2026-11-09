@@ -158,13 +158,22 @@ namespace LittleBuildersWorld.Activities
 
         protected override void ApplyState(bool instant)
         {
+            // Order-independent: a part can be shown by one stage and hidden by a later one (the dirt to dig appears
+            // after clearing and goes after digging). Start from "nothing done", then replay finished stages in order.
+            var initial = new System.Collections.Generic.HashSet<GameObject>();
             for (int i = 0; i < m_Reveals.Length; i++)
             {
-                bool done = i < Progress.Stage;
                 StageReveal r = m_Reveals[i];
                 if (r == null) continue;
-                foreach (GameObject h in r.hide) if (h != null) { RestScale(h); h.SetActive(!done); }
-                foreach (GameObject s in r.show) if (s != null) { RestScale(s); s.SetActive(done); }
+                foreach (GameObject s in r.show) if (s != null && initial.Add(s)) { RestScale(s); s.SetActive(false); }
+                foreach (GameObject h in r.hide) if (h != null && initial.Add(h)) { RestScale(h); h.SetActive(true); }
+            }
+            for (int i = 0; i < m_Reveals.Length && i < Progress.Stage; i++)
+            {
+                StageReveal r = m_Reveals[i];
+                if (r == null) continue;
+                foreach (GameObject s in r.show) if (s != null) s.SetActive(true);
+                foreach (GameObject h in r.hide) if (h != null) h.SetActive(false);
             }
             OnStageRevealed(Progress.Stage - 1, Progress.IsComplete, instant);
         }

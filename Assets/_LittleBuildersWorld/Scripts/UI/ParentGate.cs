@@ -16,6 +16,7 @@ namespace LittleBuildersWorld.UI
         [SerializeField] private TapButton m_Cancel;
 
         private int m_Correct;
+        private float m_LockedUntil;
         private Action m_OnPass;
 
         private void Awake()
@@ -31,6 +32,7 @@ namespace LittleBuildersWorld.UI
 
         public void Ask(Action onPass)
         {
+            if (Time.unscaledTime < m_LockedUntil) return; // a wrong guess locks the gate for a while: no lucky taps
             m_OnPass = onPass;
             int a = UnityEngine.Random.Range(6, 10), b = UnityEngine.Random.Range(5, 10);
             int answer = a + b;
@@ -50,6 +52,7 @@ namespace LittleBuildersWorld.UI
         {
             bool pass = index == m_Correct;
             Action cb = m_OnPass;
+            if (!pass) m_LockedUntil = Time.unscaledTime + 30f;
             Close();
             if (pass) cb?.Invoke();
         }

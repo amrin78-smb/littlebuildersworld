@@ -337,7 +337,7 @@ namespace LittleBuildersWorld.EditorTools
                 int centre = verts.Count;
                 verts.Add(new Vector3(x, r, 0f)); norms.Add(new Vector3(side, 0, 0)); uvs.Add(new Vector2(0.5f, 0.5f));
                 int first = verts.Count;
-                float inset = 0.06f;
+                float inset = 0f; // plates meet the belt edge: no see-through slit
                 for (int i = 0; i < path.Count - 1; i++)
                 {
                     Vector2 p = path[i] - normal[i] * inset;
@@ -347,8 +347,9 @@ namespace LittleBuildersWorld.EditorTools
                 for (int i = 0; i < count; i++)
                 {
                     int a = first + i, b = first + (i + 1) % count;
-                    if (side > 0) { sides.Add(centre); sides.Add(a); sides.Add(b); }
-                    else { sides.Add(centre); sides.Add(b); sides.Add(a); }
+                    // Wound so each plate faces outward (+X plate toward +X); back-face culling keeps the outer face.
+                    if (side > 0) { sides.Add(centre); sides.Add(b); sides.Add(a); }
+                    else { sides.Add(centre); sides.Add(a); sides.Add(b); }
                 }
             }
             var mesh = new Mesh { name = name, subMeshCount = 2 };

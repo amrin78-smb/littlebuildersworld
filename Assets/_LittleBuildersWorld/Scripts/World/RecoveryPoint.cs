@@ -27,6 +27,15 @@ namespace LittleBuildersWorld.World
             return best;
         }
 
+        /// <summary>Nearest point that passes <paramref name="isFree"/> (e.g. no parked vehicle on it).</summary>
+        public static RecoveryPoint NearestWhere(Vector3 position, System.Func<RecoveryPoint, bool> isFree)
+        {
+            var sorted = new List<RecoveryPoint>(s_All);
+            sorted.Sort((a, b) => (a.transform.position - position).sqrMagnitude.CompareTo((b.transform.position - position).sqrMagnitude));
+            foreach (RecoveryPoint p in sorted) if (isFree(p)) return p;
+            return sorted.Count > 0 ? sorted[0] : null;
+        }
+
         private void OnDrawGizmos()
         {
             Gizmos.color = Color.cyan;

@@ -18,9 +18,9 @@ physics fix below (v0.2.0-test) are not yet tested on a phone._
 |---|---|
 | Generator + validator (`Tools/setup.sh`) | **Passes** — no empty references, scenes and prefabs complete, ARM/PowerVR settings present |
 | EditMode tests | **34 / 34 pass** (adds helper timing, language and Thai mark placement) |
-| PlayMode tests (real town scene) | **4 / 4 pass** (adds: steering turns the truck 69°, stays on the ground and upright) |
-| Automated play-through (`Tools/autopilot.sh`) | Run 11 (final): **24/24 stars, all 8 unlocks; house, roadworks and playground complete and restored after reload; helper lines checked (welcome, pick a machine, scoop, walls celebration, playground hints, depot load) and the Thai switch; 0 floating-vehicle events**. 1 check failed: "steering right turns the truck" reads 4° in the Linux test player only — the same manoeuvre in the PlayMode test turns 69°, so it is a test-player artefact (see below). |
-| Android release APK v0.2.0 (code 2) | **Builds** (~60 MB); `verify_apk.sh`: `arm64-v8a` + `armeabi-v7a` ✔, `.*PowerVR.*` filter ✔, landscape ✔, **no INTERNET permission** ✔ |
+| PlayMode tests (real town scene) | **5 / 5 pass** (adds: steering turns and stays grounded/upright; bulldozer pushes the house crate onto the stripes and it counts) |
+| Automated play-through (`Tools/autopilot.sh`) | Run 17 (v0.2.1): **ALL 121 CHECKS PASSED** — 24/24 stars, all 8 unlocks; house, roadworks and playground complete and restored after reload; helper lines and Thai switch checked; steering check 27°. 3 route legs needed a nudge (low FPS), logged as warnings. (The stuck-test spawn was moved off the fence afterwards; not re-run.) |
+| Android release APK v0.2.1 (code 3) | **Builds** (~60 MB); `verify_apk.sh`: `arm64-v8a` + `armeabi-v7a` ✔, `.*PowerVR.*` filter ✔, landscape ✔, **no INTERNET permission** ✔ |
 | On a physical phone | v0.1.0 played on a Galaxy S25 Ultra by the owner ("plays ok"; asked for voice, text bubbles, more content → this update). v0.2.0 not yet tested on a phone; Redmi A3 still untested |
 
 ## Feature status
@@ -67,7 +67,7 @@ only where the test's own route was blocked (a parked vehicle in the way, the tr
 excavator's 8.5 m reach). The test now parks/returns vehicles like a tidy player. These are test-route issues, not
 game-logic faults, but the scenarios are worth re-checking by hand on a phone.
 
-Since run 7 the very first steering check in the test player reads 4° (it read 70–78° in runs 1–6), even when
+(Resolved in v0.2.1: the cause was a rotation-threshold bug — see the bug sweep.) Previously, since run 7, the very first steering check in the test player read 4° (it read 70–78° in runs 1–6), even when
 counted in physics steps. The identical manoeuvre in the real town scene under the PlayMode test runner turns 69°,
 and the player drives every later route normally, so this is treated as an artefact of the test player's start-up,
 not a steering fault. Not root-caused.
@@ -76,6 +76,30 @@ Game bugs the play-through found and that are fixed: clearing bounds measured fr
 reset every tick); rocks could be pushed through a fence and lost (now they return to their start); vehicles could
 ride up onto fences (colliders are now taller invisible walls); a white panel covered the truck bed; crawler-track
 faces were inside out; a null reference during scene unload.
+
+## Bug sweep (v0.2.1)
+
+After the owner's v0.2.0 test ("keeps asking to push rocks but there are none"; "bulldozer tracks don't show
+properly"), a 12-agent sweep (6 area finders + adversarial verifiers) confirmed and this release fixes:
+
+* **Clearing soft-lock**: debris carried by the blade was placed straight through the 3 m fence colliders (debris
+  has no collider), and beyond the house's north fence / playground's south fence it stayed inside the 14 m reset
+  circle, so the stage could never finish. Pushes now stop at walls (`DebrisPusher` sphere-cast), each fenced plot
+  has a play-area box (anything outside pops home), and the arrow points at the nearest remaining piece.
+* The dig mound was visible during clearing and hid the crate's start spot: the mound now appears only after
+  clearing (`ProjectActivity.ApplyState` is order-independent), and the crate/log start spots moved clear of it and
+  of the north fence.
+* **Crawler tracks**: side plates were wound inward (back-face culled from outside) and inset, leaving a slit.
+* Loaded truck heard "tip out the load" instead of where to take it; a hint could be skipped without being heard;
+  "tap the paint button" no longer plays while driving (button hidden).
+* Gentle steering was dropped by a too-coarse angle threshold (regression from v0.2.0).
+* Reset / return-home never lands a vehicle on a parked one; locked playground gate is solid.
+* Repeatable dig pit no longer stays closed after a save in the 2.5 s before it restarts.
+* Double-tap on Exit no longer also presses Home; parent gate locks for 30 s after a wrong answer; pause gear
+  survives lost touches; steering sensitivity applies at once; reset keeps the language; performance governor
+  ignores load/resume hitches; scene fade blocks taps; unlock card no longer covers the helper on 4:3.
+
+Not fixed (low): a mid-stage restart restores cleared debris/rolled patches by count, not by which ones.
 
 ## Known limitations
 

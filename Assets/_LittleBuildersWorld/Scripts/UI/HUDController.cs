@@ -40,6 +40,10 @@ namespace LittleBuildersWorld.UI
 
         private GameConfig m_Config;
         private VehicleRecovery m_Recovery;
+        private float m_SwapAt = -10f;
+
+        /// <summary>Exit and Home share a screen spot: a double tap on Exit must not also press Home.</summary>
+        private bool JustSwapped => Time.unscaledTime - m_SwapAt < 0.45f;
 
         private void Awake()
         {
@@ -105,6 +109,7 @@ namespace LittleBuildersWorld.UI
 
         private void ShowDriving(bool driving)
         {
+            if (m_FootPanel != null && m_FootPanel.activeSelf == driving) m_SwapAt = Time.unscaledTime;
             if (m_DrivePanel != null) m_DrivePanel.SetActive(driving);
             if (m_FootPanel != null) m_FootPanel.SetActive(!driving);
             RefreshFoot();
@@ -144,7 +149,7 @@ namespace LittleBuildersWorld.UI
 
         private void OnExit()
         {
-            if (!Blocked) m_Interaction.Exit();
+            if (!Blocked && !JustSwapped) m_Interaction.Exit();
         }
 
         private void OnHorn()
@@ -161,12 +166,12 @@ namespace LittleBuildersWorld.UI
 
         private void OnHome()
         {
-            if (!Blocked) m_Interaction.GoToYard(false);
+            if (!Blocked && !JustSwapped) m_Interaction.GoToYard(false);
         }
 
         private void OnPaint()
         {
-            if (Blocked || GameServices.Instance == null) return;
+            if (Blocked || JustSwapped || GameServices.Instance == null) return;
             Vehicle target = NearestToFocus();
             if (target != null) GameServices.Instance.Progression.CyclePaint(target.Id);
             GameServices.Instance.Audio.Play(Audio.SfxId.Sparkle);

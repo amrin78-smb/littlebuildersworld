@@ -63,7 +63,16 @@ namespace LittleBuildersWorld.Vehicles
         public void ReturnHome()
         {
             m_Tool?.CancelToRest();
-            m_Controller.Teleport(m_HomePosition, m_HomeRotation);
+            if (m_Controller.IsClear(m_HomePosition, m_HomeRotation))
+            {
+                m_Controller.Teleport(m_HomePosition, m_HomeRotation);
+                return;
+            }
+            // Something is parked in the bay: use the nearest free road spot instead of landing on top of it.
+            World.RecoveryPoint p = World.RecoveryPoint.NearestWhere(m_HomePosition,
+                rp => m_Controller.IsClear(rp.transform.position + Vector3.up * 0.3f, rp.transform.rotation));
+            if (p != null) m_Controller.Teleport(p.transform.position + Vector3.up * 0.3f, p.transform.rotation);
+            else m_Controller.Teleport(m_HomePosition, m_HomeRotation);
         }
 
         public static Vehicle FindNearest(Vector3 position, VehicleType type, float maxDistance, Vehicle exclude = null)

@@ -90,7 +90,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &876985452817407764
+--- !u!1 &1980437021535737958
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -98,9 +98,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6134450192383188118}
-  - component: {fileID: 1208537510900813317}
-  - component: {fileID: 5804736162914632034}
+  - component: {fileID: 3345820602300789413}
+  - component: {fileID: 2777135652742793782}
+  - component: {fileID: 5839861591188561139}
   m_Layer: 0
   m_Name: Eye
   m_TagString: Untagged
@@ -108,13 +108,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &6134450192383188118
+--- !u!4 &3345820602300789413
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 876985452817407764}
+  m_GameObject: {fileID: 1980437021535737958}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0.12, y: 1.66, z: 0.32}
@@ -123,21 +123,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 6369287963823832809}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &1208537510900813317
+--- !u!33 &2777135652742793782
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 876985452817407764}
+  m_GameObject: {fileID: 1980437021535737958}
   m_Mesh: {fileID: 4300000, guid: b6a1d5ff8b8ddf516a41cbdcd3b5d57b, type: 2}
---- !u!23 &5804736162914632034
+--- !u!23 &5839861591188561139
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 876985452817407764}
+  m_GameObject: {fileID: 1980437021535737958}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -485,7 +485,7 @@ Transform:
   - {fileID: 4387031649913635214}
   - {fileID: 581898945093857248}
   - {fileID: 356544103389981841}
-  - {fileID: 6134450192383188118}
+  - {fileID: 3345820602300789413}
   - {fileID: 9033147960563463399}
   - {fileID: 5281810791835798797}
   m_Father: {fileID: 0}

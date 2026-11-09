@@ -20,6 +20,36 @@ namespace LittleBuildersWorld.Vehicles
 
         private VehicleController m_Controller;
 
+        /// <summary>Diagnostics: the last push a wall stopped (read by the automated play-through).</summary>
+        public static string LastBlock { get; private set; } = "";
+
+        /// <summary>
+        /// Debris has no collider of its own, so a move is checked against walls first: fences and buildings stop it
+        /// (it piles up on the inside instead of passing through). Vehicles (rigidbodies) and debris never block.
+        /// </summary>
+        private static void MoveUnlessBlocked(PushableDebris d, Vector3 target)
+        {
+            Vector3 from = d.transform.position;
+            Vector3 delta = target - from;
+            delta.y = 0f;
+            float dist = delta.magnitude;
+            if (dist > 1e-4f)
+            {
+                Vector3 dir = delta / dist;
+                var origin = new Vector3(from.x, from.y + 1f, from.z);
+                if (Physics.SphereCast(origin, 0.3f, dir, out RaycastHit hit, dist + d.Radius, ~0, QueryTriggerInteraction.Ignore)
+                    && hit.rigidbody == null && hit.collider.GetComponentInParent<PushableDebris>() == null)
+                {
+                    float allowed = Mathf.Max(0f, hit.distance - d.Radius);
+                    LastBlock = $"{d.name} blocked by {hit.collider.name} at {hit.distance:0.00} (allowed {allowed:0.00})";
+                    if (allowed < 0.01f) return;
+                    target = from + dir * Mathf.Min(dist, allowed);
+                    target.y = from.y;
+                }
+            }
+            d.PushTo(target);
+        }
+
         private void Awake() => m_Controller = GetComponent<VehicleController>();
 
         private void FixedUpdate()
@@ -41,14 +71,14 @@ namespace LittleBuildersWorld.Vehicles
                     {
                         local.z = Mathf.MoveTowards(local.z, wanted, 6f * Time.fixedDeltaTime + (wanted - local.z) * 0.5f);
                         local.x *= 0.985f; // drift gently toward the middle of the blade so it is not lost off the side
-                        d.PushTo(transform.TransformPoint(local));
+                        MoveUnlessBlocked(d, transform.TransformPoint(local));
                     }
                 }
                 else if (Mathf.Abs(local.x) < m_HalfWidth + r && local.z < m_Front + r && local.z > -m_Back - r)
                 {
                     float side = local.x >= 0f ? 1f : -1f;
                     local.x = Mathf.MoveTowards(local.x, side * (m_HalfWidth + r), 5f * Time.fixedDeltaTime);
-                    d.PushTo(transform.TransformPoint(local));
+                    MoveUnlessBlocked(d, transform.TransformPoint(local));
                 }
             }
         }

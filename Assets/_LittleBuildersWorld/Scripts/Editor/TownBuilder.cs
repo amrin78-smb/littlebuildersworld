@@ -464,13 +464,17 @@ namespace LittleBuildersWorld.EditorTools
                 slots.Add(A.Pivot("Slot" + i, skip.transform, new Vector3(-1.4f + (i % 3) * 1.4f, 0.4f + (i / 3) * 0.5f, -0.4f + (i % 2) * 0.6f)));
             string[] kinds = { "DebrisRock", "DebrisLog", "DebrisCrate", "DebrisRock", "DebrisLog" };
             // Open ground west of every rock, so a bulldozer can always line up and push east.
-            Vector3[] spots = { new Vector3(33f, 0.03f, 76f), new Vector3(34f, 0.03f, 80f), new Vector3(33f, 0.03f, 84f), new Vector3(34f, 0.03f, 88f), new Vector3(33f, 0.03f, 91.5f) };
+            // Clear of the dig mound (34,84; hidden until clearing is done anyway) and 3 m from the north fence.
+            Vector3[] spots = { new Vector3(33f, 0.03f, 76f), new Vector3(34f, 0.03f, 80f), new Vector3(29f, 0.03f, 84f), new Vector3(34f, 0.03f, 88f), new Vector3(28f, 0.03f, 90f) };
             var debris = new List<Object>();
             for (int i = 0; i < kinds.Length; i++) debris.Add(Instance(kinds[i], clear, spots[i], i * 47f).GetComponent<PushableDebris>());
             var clearAct = clear.gameObject.AddComponent<BulldozerClearingActivity>();
             E.SetArray(clearAct, "m_Debris", debris.ToArray());
             E.Set(clearAct, "m_Target", skipZone);
-            E.Set(clearAct, "m_BoundsRadius", 14f); // pushed out of the plot (e.g. through the fence) → pops back home
+            E.Set(clearAct, "m_BoundsRadius", 14f);
+            // Inside of the plot fence: anything that ends up beyond it (unreachable) pops back home.
+            E.Set(clearAct, "m_AreaCentre", new Vector3(34f, 0f, 82f));
+            E.Set(clearAct, "m_AreaHalfSize", new Vector2(12.5f, 11f));
             E.SetArray(clearAct, "m_ClearSlots", slots.ToArray());
             Transform clearFocus = A.Pivot("Focus", clear, new Vector3(36f, 0f, 84f));
             SetupActivity(clearAct, "house_clear", VehicleType.Bulldozer, clearFocus, Marker(clear, new Vector3(36f, 0f, 84f), VehicleType.Bulldozer));
@@ -565,7 +569,7 @@ namespace LittleBuildersWorld.EditorTools
             SetupActivity(project, "house", VehicleType.DumpTruck, projectFocus, null);
             SetReveals(project, new List<(GameObject[], GameObject[])>
             {
-                (new GameObject[0], new GameObject[0]),
+                (new[] { mound }, new GameObject[0]), // the dirt to dig appears once the plot is clear
                 (new[] { slab }, new[] { mound, outline.gameObject }),
                 (walls, new GameObject[0]),
                 (roof, new GameObject[0]),
@@ -706,6 +710,13 @@ namespace LittleBuildersWorld.EditorTools
             GameObject gateBarrier = Instance("Barrier", pg, new Vector3(-34f, 0.03f, -70.6f), 0f, 1.8f);
             GameObject gateBarrier2 = Instance("Barrier", pg, new Vector3(-30f, 0.03f, -70.6f), 0f, 1.8f);
             GameObject gateBarrier3 = Instance("Barrier", pg, new Vector3(-38f, 0.03f, -70.6f), 0f, 1.8f);
+            foreach (GameObject g in new[] { gateBarrier, gateBarrier2, gateBarrier3 })
+            {
+                // Solid while locked (removed with the barrier on unlock).
+                var bc = g.AddComponent<BoxCollider>();
+                bc.center = new Vector3(0f, 0.85f, 0f);
+                bc.size = new Vector3(3.2f, 1.7f, 0.5f);
+            }
 
             // Stage 0: bulldozer pushes old boxes and logs onto the striped strip along the east fence.
             Transform clear = Group("S0_Clear", pg);
@@ -722,6 +733,8 @@ namespace LittleBuildersWorld.EditorTools
             E.SetArray(clearAct, "m_Debris", debris.ToArray());
             E.Set(clearAct, "m_Target", strip);
             E.Set(clearAct, "m_BoundsRadius", 14f);
+            E.Set(clearAct, "m_AreaCentre", new Vector3(-34f, 0f, -82f));
+            E.Set(clearAct, "m_AreaHalfSize", new Vector2(13.5f, 10.5f));
             E.SetArray(clearAct, "m_ClearSlots", slots.ToArray());
             Transform clearFocus = A.Pivot("Focus", clear, new Vector3(-31f, 0f, -82f));
             SetupActivity(clearAct, "pg_clear", VehicleType.Bulldozer, clearFocus, Marker(clear, new Vector3(-31f, 0f, -82f), VehicleType.Bulldozer));
@@ -819,7 +832,7 @@ namespace LittleBuildersWorld.EditorTools
             SetupActivity(project, "playground", VehicleType.RoadRoller, projectFocus, null);
             SetReveals(project, new List<(GameObject[], GameObject[])>
             {
-                (new GameObject[0], new GameObject[0]),
+                (new[] { mound }, new GameObject[0]),
                 (new[] { sandpit }, new[] { mound, outline.gameObject }),
                 (new[] { slide }, new GameObject[0]),
                 (new[] { swings }, new GameObject[0]),

@@ -435,7 +435,8 @@ namespace LittleBuildersWorld.EditorTools
             RectTransform fly = Stretch("FlyLayer", safe);
             Image flyStar = Img("FlyingStar", fly, "icon_star", Color.white, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(110, 110));
             flyStar.gameObject.SetActive(false);
-            RectTransform card = Rect("UnlockCard", safe, new Vector2(0.5f, 1f), new Vector2(0, -230), new Vector2(460, 460));
+            // Anchored just right of the helper bubble (bubble right edge 790 + gap + half the scaled card) so it never covers it on 4:3.
+            RectTransform card = Rect("UnlockCard", safe, new Vector2(0f, 1f), new Vector2(971, -230), new Vector2(460, 460));
             card.localScale = Vector3.one * 0.7f; // high and compact: never hides the vehicle
             Img("Burst", card, "fx_spark", E.Hex("#FFE066"), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(700, 700));
             Img("Bg", card, "ui_circle_outlined", Color.white, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(420, 420));

@@ -47,6 +47,7 @@ namespace LittleBuildersWorld.Core
         }
 
         private float m_NextFloatLog;
+        private float m_NextPushLog;
 
         /// <summary>Diagnostic: report a driven vehicle that is off the ground on flat land, and what holds it up.</summary>
         private void FixedUpdate()
@@ -375,18 +376,26 @@ namespace LittleBuildersWorld.Core
                 if (next == null) break;
                 Vector3 p = next.transform.position;
                 // Go round by the open approach row and the empty lane west of the rocks, then face east.
-                yield return Drive(dozer, new[] { new Vector3(stripX - 1f, 0f, approachZ), new Vector3(laneX, 0f, approachZ), new Vector3(laneX, 0f, p.z), new Vector3(p.x - 4.5f, 0f, p.z) }, 1.5f, 25f, $"{label}: line up");
+                yield return Drive(dozer, new[] { new Vector3(stripX - 1f, 0f, approachZ), new Vector3(laneX, 0f, approachZ), new Vector3(laneX, 0f, p.z), new Vector3(Mathf.Max(p.x - 4.5f, laneX - 2f), 0f, p.z) }, 1.5f, 25f, $"{label}: line up");
                 float t = 0f;
                 while (!next.IsCleared && t < 15f)
                 {
                     Vector3 aim = new Vector3(stripX + 4f, 0f, next.transform.position.z);
                     Vector3 to = Flatten(aim - dozer.transform.position);
                     float angle = Vector3.SignedAngle(Flatten(dozer.transform.forward), to, Vector3.up);
-                    m_Input.SetScriptedInput(new DriveInput(Mathf.Clamp(angle / 30f, -1f, 1f), 0.7f, 0f));
+                    // Face the stripes first (crawlers turn on the spot), then push: like a child lining up the blade.
+                    m_Input.SetScriptedInput(new DriveInput(Mathf.Clamp(angle / 30f, -1f, 1f), Mathf.Abs(angle) > 25f ? 0f : 0.7f, 0f));
+                    if (Time.time >= m_NextPushLog && Flat(next.transform.position, dozer.transform.position) < 7f)
+                    {
+                        m_NextPushLog = Time.time + 0.5f;
+                        Vector3 lp = dozer.transform.InverseTransformPoint(next.transform.position);
+                        Log($"   push {next.name}: local ({lp.x:0.00},{lp.z:0.00}) speed {dozer.Controller.Speed:0.00} driven {dozer.Controller.IsDriven} piece {next.transform.position:F1} dozer {dozer.transform.position:F1}");
+                    }
                     t += Time.deltaTime;
                     yield return null;
                 }
                 yield return Stop(dozer);
+                if (!next.IsCleared) Log($"{label}: piece {next.name} not cleared, now at {next.transform.position:F1} (home {next.HomePosition:F1}), dozer at {dozer.transform.position:F1} facing {dozer.transform.eulerAngles.y:0}; pushable={next.IsPushable} active={next.gameObject.activeInHierarchy}; last block: {DebrisPusher.LastBlock}");
                 m_Input.SetScriptedInput(new DriveInput(0f, 0f, 1f));
                 yield return Wait(1f);
                 yield return Stop(dozer);
@@ -622,7 +631,7 @@ namespace LittleBuildersWorld.Core
             yield return Enter(VehicleType.DumpTruck);
             Vehicle truck = m_Interaction.Current;
             var rec = truck.GetComponent<VehicleRecovery>();
-            truck.Controller.Teleport(new Vector3(-24.5f, 0.05f, 9f), Quaternion.Euler(0f, 270f, 0f)); // nose against the shed
+            truck.Controller.Teleport(new Vector3(-19.8f, 0.05f, -2f), Quaternion.Euler(0f, 270f, 0f)); // inside the yard, nose against the west fence
             m_Input.SetScriptedInput(new DriveInput(0f, 1f, 0f));
             float t = 0f;
             while (!rec.SeemsStuck && t < 10f) { t += Time.deltaTime; yield return null; }
