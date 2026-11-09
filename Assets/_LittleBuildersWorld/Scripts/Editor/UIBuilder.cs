@@ -55,6 +55,45 @@ namespace LittleBuildersWorld.EditorTools
             return s_Font;
         }
 
+        public const string ThaiFontPath = E.Root + "/Art/UI/Fonts/Mitr-Medium.ttf";
+        public const string ThaiFontAssetPath = E.Root + "/Art/UI/Fonts/Mitr SDF.asset";
+
+        /// <summary>
+        /// Thai glyphs come from Mitr (OFL), attached as a fallback of the Fredoka font so every label can show Thai.
+        /// The atlas is pre-filled with every character the helper and the settings use, and stays dynamic.
+        /// </summary>
+        public static TMP_FontAsset ThaiFallback(string characters)
+        {
+            TMP_FontAsset main = Font();
+            var thai = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(ThaiFontAssetPath);
+            if (thai == null)
+            {
+                var font = AssetDatabase.LoadAssetAtPath<Font>(ThaiFontPath);
+                if (font == null)
+                {
+                    Debug.LogError("[LBW] Thai font missing at " + ThaiFontPath);
+                    return null;
+                }
+                thai = TMP_FontAsset.CreateFontAsset(font, 72, 8, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
+                thai.name = "Mitr SDF";
+                AssetDatabase.CreateAsset(thai, ThaiFontAssetPath);
+                thai.material.name = "Mitr SDF Material";
+                AssetDatabase.AddObjectToAsset(thai.material, thai);
+                foreach (Texture2D t in thai.atlasTextures)
+                {
+                    t.name = "Mitr SDF Atlas";
+                    AssetDatabase.AddObjectToAsset(t, thai);
+                }
+            }
+            if (!string.IsNullOrEmpty(characters)) thai.TryAddCharacters(characters, out string missing);
+            main.fallbackFontAssetTable ??= new List<TMP_FontAsset>();
+            if (!main.fallbackFontAssetTable.Contains(thai)) main.fallbackFontAssetTable.Add(thai);
+            EditorUtility.SetDirty(thai);
+            EditorUtility.SetDirty(main);
+            AssetDatabase.SaveAssets();
+            return thai;
+        }
+
         public const string OutlineMaterialPath = E.Root + "/Art/UI/Fonts/Fredoka SDF Outline.mat";
 
         /// <summary>Shared outlined variant of the font material (big titles and labels over the 3D scene).</summary>
@@ -215,18 +254,18 @@ namespace LittleBuildersWorld.EditorTools
             Image panel = Img("Panel", overlay, "ui_panel", Cream, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1400, 960), true);
             Transform p = panel.transform;
             Text("Title", p, "Grown-up Settings", 64, Ink, new Vector2(0.5f, 1f), new Vector2(0, -70), new Vector2(1000, 90));
-            string[] labels = { "Music", "Sounds", "Voice", "Voice prompts", "Joystick steering", "Easy Drive (one finger)", "Steering sensitivity" };
-            float y = 270f;
+            string[] labels = { "Music", "Sounds", "Voice", "Voice prompts", "Joystick steering", "Easy Drive (one finger)", "Steering sensitivity", "Thai helper (ภาษาไทย)" };
+            float y = 285f;
             var sliders = new Slider[4];
-            var toggles = new Toggle[3];
+            var toggles = new Toggle[4];
             int si = 0, ti = 0;
             for (int i = 0; i < labels.Length; i++)
             {
                 Text("Label", p, labels[i], 40, Ink, new Vector2(0.5f, 0.5f), new Vector2(-330, y), new Vector2(560, 70), TextAlignmentOptions.Left);
-                bool isToggle = i >= 3 && i <= 5;
+                bool isToggle = (i >= 3 && i <= 5) || i == 7;
                 if (isToggle) toggles[ti++] = MakeToggle(p, new Vector2(140, y));
                 else sliders[si++] = MakeSlider(p, new Vector2(330, y), i == 6 ? 0.5f : 0f, i == 6 ? 1.5f : 1f);
-                y -= 88f;
+                y -= 80f;
             }
             TapButton reset = RoundButton("Reset", p, new Vector2(0.5f, 0f), new Vector2(-380, 90), 120, E.Hex("#FF595E"), "icon_reset", 0.6f);
             Text("ResetLabel", p, "Reset progress", 36, Ink, new Vector2(0.5f, 0f), new Vector2(-150, 90), new Vector2(320, 70), TextAlignmentOptions.Left);
@@ -241,6 +280,7 @@ namespace LittleBuildersWorld.EditorTools
             E.Set(settings, "m_VoicePrompts", toggles[0]);
             E.Set(settings, "m_Joystick", toggles[1]);
             E.Set(settings, "m_EasyDrive", toggles[2]);
+            E.Set(settings, "m_Thai", toggles[3]);
             E.Set(settings, "m_Reset", reset);
             E.Set(settings, "m_Close", close);
             E.Set(settings, "m_Gate", gate);
@@ -282,6 +322,7 @@ namespace LittleBuildersWorld.EditorTools
             public StarCelebrationUI Stars;
             public DriveBubbles Bubbles;
             public PauseMenu Pause;
+            public Guide.GuideBubbleUI Guide;
         }
 
         public static TownHud BuildTownHud(VehicleInteraction interaction, VehicleActionController actions, TouchInputController input, Camera cam, IList<Vehicle> vehicles)
@@ -387,6 +428,9 @@ namespace LittleBuildersWorld.EditorTools
             var gear = gearBg.gameObject.AddComponent<HoldToConfirmButton>();
             E.Set(gear, "m_Fill", fill);
 
+            // ---------------- Helper: the foreman and his speech bubble (top left, under the corner buttons)
+            Guide.GuideBubbleUI guide = BuildGuideBubble(safe);
+
             // ---------------- Celebration layer
             RectTransform fly = Stretch("FlyLayer", safe);
             Image flyStar = Img("FlyingStar", fly, "icon_star", Color.white, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(110, 110));
@@ -454,7 +498,45 @@ namespace LittleBuildersWorld.EditorTools
             E.Set(input, "m_ButtonSteering", buttonSteer.gameObject);
             E.Set(input, "m_JoystickSteering", joySteer.gameObject);
 
-            return new TownHud { Hud = hud, Stars = stars, Bubbles = bubbles, Pause = pause };
+            return new TownHud { Hud = hud, Stars = stars, Bubbles = bubbles, Pause = pause, Guide = guide };
+        }
+
+        private static Guide.GuideBubbleUI BuildGuideBubble(Transform safe)
+        {
+            RectTransform root = Rect("Helper", safe, new Vector2(0f, 1f), new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(0f, 1f));
+            // Bubble first so the foreman draws on top of the tail.
+            RectTransform bubble = Rect("Bubble", root, new Vector2(0f, 1f), new Vector2(175, -215), new Vector2(615, 190), new Vector2(0f, 1f));
+            Img("Outline", bubble, "ui_panel", Ink, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(627, 202));
+            Img("Tail", bubble, "ui_bubble_tail", Color.white, new Vector2(0f, 0.5f), new Vector2(-22, 10), new Vector2(64, 64));
+            Img("Fill", bubble, "ui_panel", Color.white, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(615, 190));
+            TextMeshProUGUI text = Text("Text", bubble, "", 40, Ink, new Vector2(0f, 0f), Vector2.zero, Vector2.zero, TextAlignmentOptions.Left);
+            text.rectTransform.anchorMin = Vector2.zero;
+            text.rectTransform.anchorMax = Vector2.one;
+            text.rectTransform.offsetMin = new Vector2(34, 14);
+            text.rectTransform.offsetMax = new Vector2(-170, -14);
+            text.enableAutoSizing = true;
+            text.fontSizeMin = 28;
+            text.fontSizeMax = 42;
+            text.lineSpacing = -8;
+            RectTransform iconRoot = Rect("Picture", bubble, new Vector2(1f, 0.5f), new Vector2(-90, 0), new Vector2(140, 140));
+            Image disc = Img("Disc", iconRoot, "ui_circle_outlined", Color.white, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(140, 140));
+            Image icon = Img("Icon", iconRoot, null, Color.white, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(104, 104));
+
+            // The foreman: a big round button (tap = say it again).
+            TapButton mascot = RoundButton("Foreman", root, new Vector2(0f, 1f), new Vector2(100, -300), 170, E.Hex("#8AD8FF"), null);
+            Image face = Img("Face", mascot.transform, "mascot_foreman", Color.white, new Vector2(0.5f, 0.5f), new Vector2(0, -4), new Vector2(170, 170));
+            face.rectTransform.pivot = new Vector2(0.5f, 0f);
+            face.rectTransform.anchoredPosition = new Vector2(0, -88);
+
+            var ui = root.gameObject.AddComponent<Guide.GuideBubbleUI>();
+            E.Set(ui, "m_Mascot", mascot);
+            E.Set(ui, "m_MascotFace", face.rectTransform);
+            E.Set(ui, "m_Bubble", bubble);
+            E.Set(ui, "m_Text", text);
+            E.Set(ui, "m_IconRoot", iconRoot.gameObject);
+            E.Set(ui, "m_IconDisc", disc);
+            E.Set(ui, "m_Icon", icon);
+            return ui;
         }
 
         // ------------------------------------------------------------------ main menu

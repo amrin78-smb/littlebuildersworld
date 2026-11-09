@@ -1,0 +1,262 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5188acd3e50fb1c76b394bc7effcf7da, type: 3}
+  m_Name: GuideLibrary
+  m_EditorClassIdentifier: LittleBuildersWorld.Runtime::LittleBuildersWorld.Guide.GuideLibrary
+  lines:
+  - key: welcome
+    en: Hello, little builder! Let's build our town!
+    th: "\u0E2A\u0E27\u0E31\u0E2A\u0E14\u0E35\u0E08\u0E49\u0E30 \u0E2B\u0E19\u0E39\u0E19\u0E49\u0E2D\u0E22\u0E19\u0E31\u0E01\u0E01\u0E48\u0E2D\u0E2A\u0E23\u0E49\u0E32\u0E07!
+      \u0E21\u0E32\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E40\u0E21\u0E37\u0E2D\u0E07\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 2177610ef00ed6f58a25c91529b702e7, type: 3}
+    voiceTh: {fileID: 8300000, guid: b8d1c0adf87214198855b232cced6811, type: 3}
+  - key: pick_any
+    en: Tap a machine to drive it!
+    th: "\u0E41\u0E15\u0E30\u0E23\u0E16\u0E17\u0E35\u0E48\u0E2D\u0E22\u0E32\u0E01\u0E02\u0E31\u0E1A\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: baa26c6eead2d3d82938093c2487b7aa, type: 3}
+    voiceTh: {fileID: 8300000, guid: b92fb85869d62bbe5a0724785350cd55, type: 3}
+  - key: pick_excavator
+    en: Let's drive the excavator! Tap it!
+    th: "\u0E21\u0E32\u0E02\u0E31\u0E1A\u0E23\u0E16\u0E02\u0E38\u0E14\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!
+      \u0E41\u0E15\u0E30\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 7ddfdf7e1dd5e4e4883a6a3d8aa5baf0, type: 3}
+    voiceTh: {fileID: 8300000, guid: 5191e4e9545491c8b9f5ece93ac401fb, type: 3}
+  - key: pick_dumptruck
+    en: Let's drive the dump truck! Tap it!
+    th: "\u0E21\u0E32\u0E02\u0E31\u0E1A\u0E23\u0E16\u0E1A\u0E23\u0E23\u0E17\u0E38\u0E01\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!
+      \u0E41\u0E15\u0E30\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: b8ab2deaf5e58ebe29217e5a62200ccd, type: 3}
+    voiceTh: {fileID: 8300000, guid: 09be420939291de93965778aedf01892, type: 3}
+  - key: pick_bulldozer
+    en: Let's drive the bulldozer! Tap it!
+    th: "\u0E21\u0E32\u0E02\u0E31\u0E1A\u0E23\u0E16\u0E14\u0E31\u0E19\u0E14\u0E34\u0E19\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!
+      \u0E41\u0E15\u0E30\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 4dc8f3d708e8b0910a012ce529aca0f2, type: 3}
+    voiceTh: {fileID: 8300000, guid: f3a391f87982fb7fd9faae368bbfaa6d, type: 3}
+  - key: pick_roadroller
+    en: Let's drive the road roller! Tap it!
+    th: "\u0E21\u0E32\u0E02\u0E31\u0E1A\u0E23\u0E16\u0E1A\u0E14\u0E16\u0E19\u0E19\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!
+      \u0E41\u0E15\u0E30\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: fcd00b70d387c2b33b4227ddf6b59588, type: 3}
+    voiceTh: {fileID: 8300000, guid: 5ec687152e83d071f9985dbf257bd96c, type: 3}
+  - key: no_job
+    en: This machine can rest now. Tap the red button and pick another one!
+    th: "\u0E23\u0E16\u0E04\u0E31\u0E19\u0E19\u0E35\u0E49\u0E1E\u0E31\u0E01\u0E44\u0E14\u0E49\u0E41\u0E25\u0E49\u0E27
+      \u0E41\u0E15\u0E30\u0E1B\u0E38\u0E48\u0E21\u0E2A\u0E35\u0E41\u0E14\u0E07 \u0E41\u0E25\u0E49\u0E27\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E04\u0E31\u0E19\u0E2D\u0E37\u0E48\u0E19\u0E19\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 52f813316ffd8b5d3885a21223251369, type: 3}
+    voiceTh: {fileID: 8300000, guid: b1c18d05cbeee797d9363bf0b22cf5e9, type: 3}
+  - key: stuck
+    en: Stuck? Tap the purple button!
+    th: "\u0E15\u0E34\u0E14\u0E2D\u0E22\u0E39\u0E48\u0E40\u0E2B\u0E23\u0E2D? \u0E41\u0E15\u0E30\u0E1B\u0E38\u0E48\u0E21\u0E2A\u0E35\u0E21\u0E48\u0E27\u0E07\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 297522d112625a14fafee94f803c54f6, type: 3}
+    voiceTh: {fileID: 8300000, guid: 189108d12f19c4cbba828a49d90c95b6, type: 3}
+  - key: follow_arrow
+    en: Follow the yellow arrow!
+    th: "\u0E02\u0E31\u0E1A\u0E15\u0E32\u0E21\u0E25\u0E39\u0E01\u0E28\u0E23\u0E2A\u0E35\u0E40\u0E2B\u0E25\u0E37\u0E2D\u0E07\u0E44\u0E1B\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 9bdb7cb5602276cfabb3a8b1f56e6472, type: 3}
+    voiceTh: {fileID: 8300000, guid: a910a94b5079c1387a9e8b2d337e4d58, type: 3}
+  - key: do_scoop
+    en: Tap the big button to scoop the dirt!
+    th: "\u0E41\u0E15\u0E30\u0E1B\u0E38\u0E48\u0E21\u0E43\u0E2B\u0E0D\u0E48\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E15\u0E31\u0E01\u0E14\u0E34\u0E19\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: c1f72685993b466b98ab2f34f4cb7269, type: 3}
+    voiceTh: {fileID: 8300000, guid: a2651ffbca404da8989c344c77c06dee, type: 3}
+  - key: do_dump
+    en: Now tap again to drop the dirt!
+    th: "\u0E41\u0E15\u0E30\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E17\u0E14\u0E34\u0E19\u0E19\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 6dc723d49bfdb74eeaa16d023dd83a2a, type: 3}
+    voiceTh: {fileID: 8300000, guid: 923a7f248fa0d12228a5b6e6f37a869c, type: 3}
+  - key: do_load
+    en: Tap the button to fill up the truck!
+    th: "\u0E41\u0E15\u0E30\u0E1B\u0E38\u0E48\u0E21\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E15\u0E34\u0E21\u0E02\u0E2D\u0E07\u0E43\u0E2A\u0E48\u0E23\u0E16\u0E1A\u0E23\u0E23\u0E17\u0E38\u0E01!"
+    voiceEn: {fileID: 8300000, guid: d9189ac76af151640ac7486d6feb7f86, type: 3}
+    voiceTh: {fileID: 8300000, guid: 0dbb9763d2d39fcfab5d078c452cda44, type: 3}
+  - key: do_unload
+    en: Tap the button to tip out the load!
+    th: "\u0E41\u0E15\u0E30\u0E1B\u0E38\u0E48\u0E21\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E40\u0E17\u0E02\u0E2D\u0E07\u0E25\u0E07\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 80ba6fdd4533d9e4cbcef689a3ef1033, type: 3}
+    voiceTh: {fileID: 8300000, guid: 18753abdd39d871fa9b4fab2cef44457, type: 3}
+  - key: get_load
+    en: Drive into the blue circle to get a load!
+    th: "\u0E02\u0E31\u0E1A\u0E40\u0E02\u0E49\u0E32\u0E44\u0E1B\u0E43\u0E19\u0E27\u0E07\u0E01\u0E25\u0E21\u0E2A\u0E35\u0E1F\u0E49\u0E32\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E23\u0E31\u0E1A\u0E02\u0E2D\u0E07\u0E19\u0E30!"
+    voiceEn: {fileID: 8300000, guid: b7dba014e40d8b4888871aecd9b05ced, type: 3}
+    voiceTh: {fileID: 8300000, guid: 2c0b621ec57b5e686b385039ad30ac1b, type: 3}
+  - key: yard_dig
+    en: Dig in the big dirt pile!
+    th: "\u0E44\u0E1B\u0E02\u0E38\u0E14\u0E01\u0E2D\u0E07\u0E14\u0E34\u0E19\u0E01\u0E2D\u0E07\u0E43\u0E2B\u0E0D\u0E48\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 3ad3ddd2f8dc08d1583dc3eabf1ddb3d, type: 3}
+    voiceTh: {fileID: 8300000, guid: 2397cdba99e493333a8d5ca490f129d6, type: 3}
+  - key: house_clear
+    en: Push the rocks onto the stripes!
+    th: "\u0E14\u0E31\u0E19\u0E01\u0E49\u0E2D\u0E19\u0E2B\u0E34\u0E19\u0E44\u0E1B\u0E17\u0E35\u0E48\u0E25\u0E32\u0E22\u0E17\u0E32\u0E07\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: b54903ac3f718488a8f5ced490c238bb, type: 3}
+    voiceTh: {fileID: 8300000, guid: 1851eb56d311a4ec1b12fe175082ad09, type: 3}
+  - key: house_dig
+    en: Dig the dirt for the new house!
+    th: "\u0E02\u0E38\u0E14\u0E14\u0E34\u0E19\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E1A\u0E49\u0E32\u0E19\u0E2B\u0E25\u0E31\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 7cca770833581b530a0fd521dfd27df3, type: 3}
+    voiceTh: {fileID: 8300000, guid: 12033364630bc638cb4533b15966abd6, type: 3}
+  - key: house_deliver
+    en: Take the load to the new house!
+    th: "\u0E02\u0E19\u0E02\u0E2D\u0E07\u0E44\u0E1B\u0E17\u0E35\u0E48\u0E1A\u0E49\u0E32\u0E19\u0E2B\u0E25\u0E31\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: e0be26ab0bac6238d905b4d7ee800ed2, type: 3}
+    voiceTh: {fileID: 8300000, guid: c85182e33ca0cc5a4939b5441c6c9c83, type: 3}
+  - key: road_clear
+    en: Push the cones and rocks onto the stripes!
+    th: "\u0E14\u0E31\u0E19\u0E01\u0E23\u0E27\u0E22\u0E01\u0E31\u0E1A\u0E01\u0E49\u0E2D\u0E19\u0E2B\u0E34\u0E19\u0E44\u0E1B\u0E17\u0E35\u0E48\u0E25\u0E32\u0E22\u0E17\u0E32\u0E07\u0E19\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 7341b42a66e2a2e87b9cb5656dded6aa, type: 3}
+    voiceTh: {fileID: 8300000, guid: a74cf2f464dadb1d780d35430666b9ee, type: 3}
+  - key: road_fill
+    en: Bring a load to fill the holes in the road!
+    th: "\u0E02\u0E19\u0E02\u0E2D\u0E07\u0E44\u0E1B\u0E16\u0E21\u0E2B\u0E25\u0E38\u0E21\u0E1A\u0E19\u0E16\u0E19\u0E19\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 306f59f7dc2d5af248b51c430a28768d, type: 3}
+    voiceTh: {fileID: 8300000, guid: 71ae9f0985089aa188d8fd3d19af6d1c, type: 3}
+  - key: road_roll
+    en: Roll over the bumpy road to make it smooth!
+    th: "\u0E02\u0E31\u0E1A\u0E17\u0E31\u0E1A\u0E16\u0E19\u0E19\u0E17\u0E35\u0E48\u0E02\u0E23\u0E38\u0E02\u0E23\u0E30\u0E43\u0E2B\u0E49\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 48d09894b6f87f6499811bc579ac4851, type: 3}
+    voiceTh: {fileID: 8300000, guid: 608724f0dacd1b827bb7823f1e7e07df, type: 3}
+  - key: pg_clear
+    en: Push the old boxes onto the stripes!
+    th: "\u0E14\u0E31\u0E19\u0E01\u0E25\u0E48\u0E2D\u0E07\u0E40\u0E01\u0E48\u0E32\u0E44\u0E1B\u0E17\u0E35\u0E48\u0E25\u0E32\u0E22\u0E17\u0E32\u0E07\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 67fa6e903d682ba168b2f29639443957, type: 3}
+    voiceTh: {fileID: 8300000, guid: f3d27fe035922708b8b1f4413bdc1647, type: 3}
+  - key: pg_dig
+    en: Dig a hole for the sandpit!
+    th: "\u0E02\u0E38\u0E14\u0E2B\u0E25\u0E38\u0E21\u0E17\u0E33\u0E1A\u0E48\u0E2D\u0E17\u0E23\u0E32\u0E22\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!"
+    voiceEn: {fileID: 8300000, guid: cb970bc7b1ea38ecba56ebc1a9d7d8e4, type: 3}
+    voiceTh: {fileID: 8300000, guid: 9adacaf1105b8a10a99ab671801015eb, type: 3}
+  - key: pg_deliver
+    en: Take the load to the playground!
+    th: "\u0E02\u0E19\u0E02\u0E2D\u0E07\u0E44\u0E1B\u0E17\u0E35\u0E48\u0E2A\u0E19\u0E32\u0E21\u0E40\u0E14\u0E47\u0E01\u0E40\u0E25\u0E48\u0E19\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: d73aaa7e8691a42ed95d14cdc5a93bec, type: 3}
+    voiceTh: {fileID: 8300000, guid: 78ba1634c51e01997a1f851d6890fd15, type: 3}
+  - key: pg_roll
+    en: Roll the bumpy ground nice and flat!
+    th: "\u0E1A\u0E14\u0E1E\u0E37\u0E49\u0E19\u0E17\u0E35\u0E48\u0E02\u0E23\u0E38\u0E02\u0E23\u0E30\u0E43\u0E2B\u0E49\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 06102556bf82e7f7886723f4a53b5dc7, type: 3}
+    voiceTh: {fileID: 8300000, guid: 1ddf14969bc06ad93813b797abeff83d, type: 3}
+  - key: yard_dig_done
+    en: Great digging!
+    th: "\u0E02\u0E38\u0E14\u0E40\u0E01\u0E48\u0E07\u0E21\u0E32\u0E01!"
+    voiceEn: {fileID: 8300000, guid: a0ed94719d58ebc00b9d054488aef597, type: 3}
+    voiceTh: {fileID: 8300000, guid: 06eefc526c12b7cdaaefb18b7f4dc854, type: 3}
+  - key: house_clear_done
+    en: Great pushing! The plot is all clear!
+    th: "\u0E14\u0E31\u0E19\u0E40\u0E01\u0E48\u0E07\u0E21\u0E32\u0E01! \u0E1E\u0E37\u0E49\u0E19\u0E17\u0E35\u0E48\u0E42\u0E25\u0E48\u0E07\u0E41\u0E25\u0E49\u0E27!"
+    voiceEn: {fileID: 8300000, guid: e65ef55f9b3806d30999d5216fc1c10b, type: 3}
+    voiceTh: {fileID: 8300000, guid: 2853d550def000b95935ee39d6bd532d, type: 3}
+  - key: house_dig_done
+    en: Great digging! Here comes the floor!
+    th: "\u0E02\u0E38\u0E14\u0E40\u0E01\u0E48\u0E07\u0E21\u0E32\u0E01! \u0E1E\u0E37\u0E49\u0E19\u0E1A\u0E49\u0E32\u0E19\u0E21\u0E32\u0E41\u0E25\u0E49\u0E27!"
+    voiceEn: {fileID: 8300000, guid: 45fabf2052a2adbbe811bf6496465c0c, type: 3}
+    voiceTh: {fileID: 8300000, guid: b31e7d2b75a1cd4548039c5d66a69fb6, type: 3}
+  - key: house_walls_done
+    en: Wow! The walls are up!
+    th: "\u0E27\u0E49\u0E32\u0E27! \u0E01\u0E33\u0E41\u0E1E\u0E07\u0E02\u0E36\u0E49\u0E19\u0E41\u0E25\u0E49\u0E27!"
+    voiceEn: {fileID: 8300000, guid: 226c172c8ad52a4d9b33ffd06321d3f5, type: 3}
+    voiceTh: {fileID: 8300000, guid: 7036f630bcf21f0a7b184b2dd5537d82, type: 3}
+  - key: house_roof_done
+    en: The roof is on!
+    th: "\u0E2B\u0E25\u0E31\u0E07\u0E04\u0E32\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27!"
+    voiceEn: {fileID: 8300000, guid: 8d8d2b38286517c95b85343c000b017d, type: 3}
+    voiceTh: {fileID: 8300000, guid: eae2f3b30d1f3bc3fa5fa95abcf67e1c, type: 3}
+  - key: house_doors_done
+    en: A door and windows! Knock, knock!
+    th: "\u0E21\u0E35\u0E1B\u0E23\u0E30\u0E15\u0E39\u0E01\u0E31\u0E1A\u0E2B\u0E19\u0E49\u0E32\u0E15\u0E48\u0E32\u0E07\u0E41\u0E25\u0E49\u0E27!
+      \u0E01\u0E4A\u0E2D\u0E01 \u0E01\u0E4A\u0E2D\u0E01!"
+    voiceEn: {fileID: 8300000, guid: 21f1450ce623f46698839a61a27ee73e, type: 3}
+    voiceTh: {fileID: 8300000, guid: 391f35cda43019f8a936aaac04793a87, type: 3}
+  - key: house_done
+    en: You built a house! Wonderful building!
+    th: "\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E1A\u0E49\u0E32\u0E19\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27!
+      \u0E40\u0E01\u0E48\u0E07\u0E21\u0E32\u0E01\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: a22fb9f1ef87a757eb0639be987be900, type: 3}
+    voiceTh: {fileID: 8300000, guid: b108a266b202092dda7614e491e9b4ee, type: 3}
+  - key: road_clear_done
+    en: The road is clear!
+    th: "\u0E16\u0E19\u0E19\u0E42\u0E25\u0E48\u0E07\u0E41\u0E25\u0E49\u0E27!"
+    voiceEn: {fileID: 8300000, guid: 00ebd705773fbff8e83836709edd5a2c, type: 3}
+    voiceTh: {fileID: 8300000, guid: dd366afd2f23d43e4b1103944d6ddac7, type: 3}
+  - key: road_fill_done
+    en: All the holes are filled!
+    th: "\u0E16\u0E21\u0E2B\u0E25\u0E38\u0E21\u0E04\u0E23\u0E1A\u0E41\u0E25\u0E49\u0E27!"
+    voiceEn: {fileID: 8300000, guid: 1425298042ad0a90fabb5873dfd4313d, type: 3}
+    voiceTh: {fileID: 8300000, guid: ee9102e9231edd8cca08747e7ace3319, type: 3}
+  - key: roadworks_done
+    en: Look at the new road! Beep beep!
+    th: "\u0E14\u0E39\u0E16\u0E19\u0E19\u0E43\u0E2B\u0E21\u0E48\u0E2A\u0E34! \u0E1B\u0E35\u0E4A\u0E19
+      \u0E1B\u0E35\u0E4A\u0E19!"
+    voiceEn: {fileID: 8300000, guid: e8000641eb9561ee5b7e1ba364242590, type: 3}
+    voiceTh: {fileID: 8300000, guid: 1023ee1e52ecc1742b2fb57f71c4e6d8, type: 3}
+  - key: pg_clear_done
+    en: All clear! Let's build a playground!
+    th: "\u0E42\u0E25\u0E48\u0E07\u0E41\u0E25\u0E49\u0E27! \u0E21\u0E32\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21\u0E40\u0E14\u0E47\u0E01\u0E40\u0E25\u0E48\u0E19\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 848c23943ab5837c99d2d57ddbc55083, type: 3}
+    voiceTh: {fileID: 8300000, guid: 5d88843ce591162da93de9ebfed98e4c, type: 3}
+  - key: pg_dig_done
+    en: A sandpit! Here comes the sand!
+    th: "\u0E1A\u0E48\u0E2D\u0E17\u0E23\u0E32\u0E22\u0E21\u0E32\u0E41\u0E25\u0E49\u0E27!"
+    voiceEn: {fileID: 8300000, guid: e609f01b2230f2261b5a75d8ce87318a, type: 3}
+    voiceTh: {fileID: 8300000, guid: e823ae4cfa79ea0899fd5cac88edaacf, type: 3}
+  - key: pg_slide_done
+    en: Wheee! A slide!
+    th: "\u0E27\u0E35\u0E49! \u0E01\u0E23\u0E30\u0E14\u0E32\u0E19\u0E25\u0E37\u0E48\u0E19\u0E21\u0E32\u0E41\u0E25\u0E49\u0E27!"
+    voiceEn: {fileID: 8300000, guid: 1a4e979858c3ec7028a829bd94dbc0a0, type: 3}
+    voiceTh: {fileID: 8300000, guid: f6e3645babf28281592ff78be81b9a41, type: 3}
+  - key: pg_swings_done
+    en: Swings! Up and down, up and down!
+    th: "\u0E0A\u0E34\u0E07\u0E0A\u0E49\u0E32! \u0E44\u0E01\u0E27\u0E02\u0E36\u0E49\u0E19
+      \u0E44\u0E01\u0E27\u0E25\u0E07!"
+    voiceEn: {fileID: 8300000, guid: 54c061c465b3a4a378467c573897e4a1, type: 3}
+    voiceTh: {fileID: 8300000, guid: 23048909468f499c9945c3e8191a047d, type: 3}
+  - key: playground_done
+    en: You built a playground! Hooray!
+    th: "\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E2A\u0E19\u0E32\u0E21\u0E40\u0E14\u0E47\u0E01\u0E40\u0E25\u0E48\u0E19\u0E40\u0E2A\u0E23\u0E47\u0E08\u0E41\u0E25\u0E49\u0E27!
+      \u0E40\u0E22\u0E49!"
+    voiceEn: {fileID: 8300000, guid: ed1e00f039d95b75aaa78ab1398d8695, type: 3}
+    voiceTh: {fileID: 8300000, guid: 024f014586c14aa2293f86d7a4cf4665, type: 3}
+  - key: praise_dig
+    en: Scoop! Nice one!
+    th: "\u0E15\u0E31\u0E01\u0E40\u0E01\u0E48\u0E07\u0E21\u0E32\u0E01!"
+    voiceEn: {fileID: 8300000, guid: 30e707acd47b4a40a8ed138b3d503048, type: 3}
+    voiceTh: {fileID: 8300000, guid: 775ae5472bea106a2a70eea35f42cde6, type: 3}
+  - key: praise_push
+    en: Good pushing!
+    th: "\u0E14\u0E31\u0E19\u0E40\u0E01\u0E48\u0E07\u0E21\u0E32\u0E01!"
+    voiceEn: {fileID: 8300000, guid: 633facdcd1b25fce78d760ad986d7b64, type: 3}
+    voiceTh: {fileID: 8300000, guid: 441482fed2617f4468cd86e027aac118, type: 3}
+  - key: praise_deliver
+    en: Nice delivery!
+    th: "\u0E2A\u0E48\u0E07\u0E02\u0E2D\u0E07\u0E40\u0E01\u0E48\u0E07\u0E21\u0E32\u0E01!"
+    voiceEn: {fileID: 8300000, guid: 17cce615aca9ccaa398d9e2fd9a2a5de, type: 3}
+    voiceTh: {fileID: 8300000, guid: 253b60586c8bb4f8e9e3585b8820274c, type: 3}
+  - key: praise_roll
+    en: So smooth!
+    th: "\u0E40\u0E23\u0E35\u0E22\u0E1A\u0E01\u0E23\u0E34\u0E1A\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: a2ece7cdb7bb6999b8705907e849e688, type: 3}
+    voiceTh: {fileID: 8300000, guid: 479f39c25b4c920da9cbfe89fcad4ccf, type: 3}
+  - key: unlock_paint
+    en: A new colour! Tap the paint button to try it!
+    th: "\u0E2A\u0E35\u0E43\u0E2B\u0E21\u0E48! \u0E41\u0E15\u0E30\u0E1B\u0E38\u0E48\u0E21\u0E23\u0E30\u0E1A\u0E32\u0E22\u0E2A\u0E35\u0E40\u0E1E\u0E37\u0E48\u0E2D\u0E25\u0E2D\u0E07\u0E40\u0E25\u0E22!"
+    voiceEn: {fileID: 8300000, guid: 1f89dc0205fceb94c8629c74978705ca, type: 3}
+    voiceTh: {fileID: 8300000, guid: 2f353c612673db2a7900ed241789c56d, type: 3}
+  - key: unlock_decor
+    en: Look! The yard has a new decoration!
+    th: "\u0E14\u0E39\u0E2A\u0E34! \u0E25\u0E32\u0E19\u0E01\u0E48\u0E2D\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E21\u0E35\u0E02\u0E2D\u0E07\u0E15\u0E01\u0E41\u0E15\u0E48\u0E07\u0E43\u0E2B\u0E21\u0E48!"
+    voiceEn: {fileID: 8300000, guid: fb4d97e81f1c517c2b9003e886461506, type: 3}
+    voiceTh: {fileID: 8300000, guid: 1cc986ce4ec8da8d280b10deb7e55eeb, type: 3}
+  - key: unlock_area
+    en: The playground site is open! Let's build it!
+    th: "\u0E2A\u0E19\u0E32\u0E21\u0E40\u0E14\u0E47\u0E01\u0E40\u0E25\u0E48\u0E19\u0E40\u0E1B\u0E34\u0E14\u0E41\u0E25\u0E49\u0E27!
+      \u0E44\u0E1B\u0E2A\u0E23\u0E49\u0E32\u0E07\u0E01\u0E31\u0E19\u0E40\u0E16\u0E2D\u0E30!"
+    voiceEn: {fileID: 8300000, guid: 5b794d060a128280d9458cb0f6b84da4, type: 3}
+    voiceTh: {fileID: 8300000, guid: 6609806745c531ead86d92b7ddca1ded, type: 3}

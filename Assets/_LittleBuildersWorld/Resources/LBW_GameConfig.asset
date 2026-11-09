@@ -28,21 +28,36 @@ MonoBehaviour:
     starsRequired: 4
     icon: {fileID: 21300000, guid: 7d645c7d70177f22784fa7ed110204f9, type: 3}
     colour: {r: 1, g: 0.34901962, b: 0.36862746, a: 1}
+  - id: area_playground
+    kind: 2
+    starsRequired: 6
+    icon: {fileID: 21300000, guid: 9024bcc4f48aa71fdb435e0fc2c1d60c, type: 3}
+    colour: {r: 0.41960785, g: 0.79607844, b: 0.46666667, a: 1}
   - id: paint_ocean
     kind: 0
-    starsRequired: 7
+    starsRequired: 8
     icon: {fileID: 21300000, guid: 19fc2cb0182ed385fa25a8c0e0121457, type: 3}
     colour: {r: 0.30588236, g: 0.65882355, b: 0.87058824, a: 1}
   - id: decor_balloons
     kind: 1
-    starsRequired: 10
+    starsRequired: 11
     icon: {fileID: 21300000, guid: 5bcf5fa49723b9e948b87695202f5498, type: 3}
     colour: {r: 1, g: 0.7882353, b: 0.23529412, a: 1}
   - id: paint_candy
     kind: 0
-    starsRequired: 14
+    starsRequired: 15
     icon: {fileID: 21300000, guid: 19fc2cb0182ed385fa25a8c0e0121457, type: 3}
     colour: {r: 1, g: 0.56078434, b: 0.78039217, a: 1}
+  - id: paint_forest
+    kind: 0
+    starsRequired: 19
+    icon: {fileID: 21300000, guid: 19fc2cb0182ed385fa25a8c0e0121457, type: 3}
+    colour: {r: 0.16470589, g: 0.6156863, b: 0.56078434, a: 1}
+  - id: decor_rainbow
+    kind: 1
+    starsRequired: 23
+    icon: {fileID: 21300000, guid: 7568b9786a2dfa398a7358d3d12975fb, type: 3}
+    colour: {r: 1, g: 0.62352943, b: 0.10980392, a: 1}
   paints:
   - id: factory
     unlockId: 
@@ -64,10 +79,23 @@ MonoBehaviour:
     primary: {r: 1, g: 0.56078434, b: 0.78039217, a: 1}
     secondary: {r: 0.7019608, g: 0.53333336, b: 0.92156863, a: 1}
     swatch: {fileID: 0}
+  - id: forest
+    unlockId: paint_forest
+    primary: {r: 0.16470589, g: 0.6156863, b: 0.56078434, a: 1}
+    secondary: {r: 0.9137255, g: 0.9607843, b: 0.85882354, a: 1}
+    swatch: {fileID: 0}
   audio: {fileID: 11400000, guid: 8f2c77c17d19824f5a4a55aa802ae610, type: 2}
   iconScoop: {fileID: 21300000, guid: a51c7c6303f657611841e31f3c69e044, type: 3}
   iconDump: {fileID: 21300000, guid: 45993b104180b50daa456d0afaa16efe, type: 3}
   iconLoad: {fileID: 21300000, guid: 51f6f26f7ad1f5fd9adc9f19306d4e7a, type: 3}
   iconUnload: {fileID: 21300000, guid: c2a8ed351586a404c94034671f6b84fc, type: 3}
   iconStar: {fileID: 21300000, guid: 225d0a6d9672cb2ff93a32b2ba657038, type: 3}
+  guide: {fileID: 11400000, guid: a6c6d4b8d503226cb965e715fd04fb0c, type: 2}
+  mascot: {fileID: 21300000, guid: e9215a4ee46d2790fbe985d13b02c9e1, type: 3}
+  iconHouse: {fileID: 21300000, guid: 0447bb0ca01d887d1a3645ded9ac0ea3, type: 3}
+  iconRoad: {fileID: 21300000, guid: 29de53b788a76431aa5858bccf9fa42e, type: 3}
+  iconPlayground: {fileID: 21300000, guid: 9024bcc4f48aa71fdb435e0fc2c1d60c, type: 3}
+  iconExit: {fileID: 21300000, guid: e37420272caf11a7ea082786dacde97b, type: 3}
+  iconReset: {fileID: 21300000, guid: 296272381daa4acb6bd6244dd7916086, type: 3}
+  iconArrow: {fileID: 21300000, guid: 5a6f80f7f2bcd34c280b70ed8d7ed3da, type: 3}
   targetFrameRate: 60

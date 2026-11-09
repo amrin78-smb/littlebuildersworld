@@ -47,6 +47,18 @@ namespace LittleBuildersWorld.EditorTools
             Save(Debris("Crate"), "DebrisCrate", ActivityFolder);
             Save(Debris("Cone"), "DebrisCone", ActivityFolder);
             Save(Resident("#FFB703", "#219EBC"), "Resident");
+            Save(Person("Foreman", "#FFC93C", "#FF9F1C", 1f, true), "Foreman");
+            Save(Person("KidA", "#3A2E2A", "#FF595E", 0.72f, false), "KidA");
+            Save(Person("KidB", "#8A5A3A", "#4EA8DE", 0.68f, false), "KidB");
+            Save(Person("KidC", "#F4D35E", "#8AC926", 0.7f, false), "KidC");
+            Save(Sandpit(), "Sandpit");
+            Save(Slide(), "Slide");
+            Save(Swings(), "Swings");
+            Save(ClimbingFrame(), "ClimbingFrame");
+            Save(Roundabout(), "Roundabout");
+            Save(Bench(), "Bench");
+            Save(Rainbow(), "Rainbow");
+            Save(PartsPallet(), "PartsPallet");
             Save(Bunting(), "Bunting");
             Save(BalloonArch(), "BalloonArch");
             Save(Fountain(), "Fountain");
@@ -348,6 +360,188 @@ namespace LittleBuildersWorld.EditorTools
             A.Part("Arm", arm, A.Box(0.18f, 0.6f, 0.18f, 0.08f), A.Colour("ResidentShirt", shirt), new Vector3(0f, 0.28f, 0f));
             A.Part("Hand", arm, A.Sphere(0.12f), A.Colour("ResidentSkin", "#F1C27D"), new Vector3(0f, 0.62f, 0f));
             A.Part("ArmL", r.transform, A.Box(0.18f, 0.6f, 0.18f, 0.08f), A.Colour("ResidentShirt", shirt), new Vector3(-0.45f, 0.95f, 0f));
+            return r;
+        }
+
+        /// <summary>
+        /// A friendly figure: the foreman (hard hat) or a child (hair). Materials are named per colour, so every
+        /// figure keeps its own colours. "WaveArm" is animated by AmbientMotion.
+        /// </summary>
+        private static GameObject Person(string name, string hatOrHair, string shirt, float scale, bool hardHat)
+        {
+            GameObject r = Root(name);
+            Transform b = A.Pivot("Body", r.transform, Vector3.zero);
+            b.localScale = Vector3.one * scale;
+            Material shirtMat = A.Colour("Shirt_" + shirt.TrimStart('#'), shirt);
+            Material skin = A.Colour("ResidentSkin", "#F1C27D");
+            A.Part("Legs", b, A.Box(0.5f, 0.6f, 0.32f, 0.12f), A.Colour("ResidentTrousers", "#3D5A80"), new Vector3(0f, 0.3f, 0f));
+            A.Part("Torso", b, A.Box(0.7f, 0.75f, 0.42f, 0.2f), shirtMat, new Vector3(0f, 0.95f, 0f));
+            if (hardHat) A.Part("Stripe", b, A.Box(0.72f, 0.1f, 0.44f, 0.04f), A.Colour("HiVisStripe", "#FFF2B0"), new Vector3(0f, 1.05f, 0f));
+            A.Part("Head", b, A.Sphere(0.36f), skin, new Vector3(0f, 1.62f, 0f));
+            Material top = A.Colour((hardHat ? "HardHat_" : "Hair_") + hatOrHair.TrimStart('#'), hatOrHair, hardHat ? 0.5f : 0.15f);
+            A.Part(hardHat ? "Hat" : "Hair", b, A.Dome(hardHat ? 0.4f : 0.37f, hardHat ? 0.28f : 0.22f), top, new Vector3(0f, hardHat ? 1.78f : 1.74f, hardHat ? 0f : -0.03f));
+            if (hardHat) A.Part("Brim", b, A.Disc(0.46f, 0.05f, 0.02f, 20), top, new Vector3(0f, 1.78f, 0.03f));
+            A.Part("Smile", b, A.Box(0.18f, 0.05f, 0.04f, 0.02f), A.Ink, new Vector3(0f, 1.52f, 0.34f));
+            foreach (float x in new[] { -0.12f, 0.12f })
+                A.Part("Eye", b, A.Sphere(0.05f), A.Ink, new Vector3(x, 1.66f, 0.32f));
+            Transform arm = A.Pivot("WaveArm", r.transform, new Vector3(0.42f, 1.25f, 0f) * scale);
+            arm.localScale = Vector3.one * scale;
+            A.Part("Arm", arm, A.Box(0.18f, 0.6f, 0.18f, 0.08f), shirtMat, new Vector3(0f, 0.28f, 0f));
+            A.Part("Hand", arm, A.Sphere(0.12f), skin, new Vector3(0f, 0.62f, 0f));
+            A.Part("ArmL", b, A.Box(0.18f, 0.6f, 0.18f, 0.08f), shirtMat, new Vector3(-0.45f, 0.95f, 0f));
+            return r;
+        }
+
+        // ------------------------------------------------------------------ playground (no colliders, like the house parts)
+        private static GameObject Sandpit()
+        {
+            GameObject r = Root("Sandpit");
+            foreach (var (pos, size) in new[] { (new Vector3(0f, 0.2f, 2f), new Vector3(5.2f, 0.4f, 0.3f)), (new Vector3(0f, 0.2f, -2f), new Vector3(5.2f, 0.4f, 0.3f)),
+                         (new Vector3(2.5f, 0.2f, 0f), new Vector3(0.3f, 0.4f, 4.3f)), (new Vector3(-2.5f, 0.2f, 0f), new Vector3(0.3f, 0.4f, 4.3f)) })
+                A.Part("Board", r.transform, A.Box(size.x, size.y, size.z, 0.06f), A.Wood, pos);
+            A.Part("Sand", r.transform, A.Box(4.8f, 0.24f, 3.8f, 0.1f), A.Colour("PlaySand", "#F6D98B", 0.05f), new Vector3(0f, 0.13f, 0f));
+            A.Part("Castle", r.transform, A.Box(0.6f, 0.5f, 0.6f, 0.08f), A.Colour("PlaySandDark", "#E9C46A", 0.05f), new Vector3(-1f, 0.45f, 0.4f));
+            Transform bucket = A.Pivot("Bucket", r.transform, new Vector3(1.1f, 0.25f, -0.6f));
+            A.Part("Pail", bucket, A.Disc(0.28f, 0.42f, 0.04f, 16), A.Colour("ToyRed", "#FF595E", 0.4f), Vector3.zero);
+            A.Part("Spade", r.transform, A.Box(0.12f, 0.06f, 0.7f, 0.03f), A.Colour("ToyBlue", "#1982C4", 0.4f), new Vector3(0.4f, 0.3f, -1f), new Vector3(0f, 30f, 0f));
+            return r;
+        }
+
+        private static GameObject Slide()
+        {
+            GameObject r = Root("Slide");
+            Material post = A.Colour("PlayBlue", "#1982C4", 0.4f);
+            Material yellow = A.Colour("PlayYellow", "#FFC93C", 0.4f);
+            foreach (float x in new[] { -0.7f, 0.7f })
+            foreach (float z in new[] { -0.7f, 0.7f })
+                A.Part("Post", r.transform, A.Box(0.16f, 2.6f, 0.16f, 0.05f), post, new Vector3(x, 1.3f, z));
+            A.Part("Deck", r.transform, A.Box(1.6f, 0.16f, 1.6f, 0.05f), A.Wood, new Vector3(0f, 2f, 0f));
+            A.Part("Roof", r.transform, A.Cone(1.25f, 0.9f), A.Colour("PlayRed", "#FF595E", 0.4f), new Vector3(0f, 2.6f, 0f));
+            // Chute down to the east (+x).
+            Transform chute = A.Pivot("Chute", r.transform, new Vector3(2.55f, 1.05f, 0f), new Vector3(0f, 0f, -27f));
+            A.Part("Bed", chute, A.Box(4.1f, 0.12f, 0.9f, 0.05f), A.Colour("SlideRed", "#FF595E", 0.6f), Vector3.zero);
+            A.Part("SideL", chute, A.Box(4.1f, 0.3f, 0.1f, 0.04f), yellow, new Vector3(0f, 0.15f, 0.45f));
+            A.Part("SideR", chute, A.Box(4.1f, 0.3f, 0.1f, 0.04f), yellow, new Vector3(0f, 0.15f, -0.45f));
+            // Ladder up the west side.
+            Transform ladder = A.Pivot("Ladder", r.transform, new Vector3(-1.25f, 1f, 0f), new Vector3(0f, 0f, -18f));
+            foreach (float z in new[] { -0.4f, 0.4f })
+                A.Part("Rail", ladder, A.Box(0.1f, 2.2f, 0.1f, 0.03f), post, new Vector3(0f, 0f, z));
+            for (int i = 0; i < 4; i++)
+                A.Part("Rung", ladder, A.Box(0.08f, 0.08f, 0.8f, 0.02f), yellow, new Vector3(0f, -0.8f + i * 0.5f, 0f));
+            return r;
+        }
+
+        private static GameObject Swings()
+        {
+            GameObject r = Root("Swings");
+            Material frame = A.Colour("PlayGreen", "#6BCB77", 0.4f);
+            A.Part("TopBar", r.transform, A.Box(5.2f, 0.16f, 0.16f, 0.06f), frame, new Vector3(0f, 2.7f, 0f));
+            foreach (float x in new[] { -2.4f, 2.4f })
+            foreach (float side in new[] { -1f, 1f })
+                A.Part("Leg", r.transform, A.Box(0.16f, 2.85f, 0.16f, 0.05f), frame, new Vector3(x, 1.35f, side * 0.45f), new Vector3(side * 19f, 0f, 0f));
+            string[] seats = { "#FF595E", "#FFC93C" };
+            for (int i = 0; i < 2; i++)
+            {
+                Transform pivot = A.Pivot("SwingPivot" + i, r.transform, new Vector3(-1.1f + i * 2.2f, 2.62f, 0f));
+                foreach (float x in new[] { -0.35f, 0.35f })
+                    A.Part("Chain", pivot, A.Box(0.04f, 1.9f, 0.04f, 0.01f), A.Steel, new Vector3(x, -0.95f, 0f));
+                A.Part("Seat", pivot, A.Box(0.85f, 0.1f, 0.4f, 0.04f), A.Colour("SwingSeat" + i, seats[i], 0.4f), new Vector3(0f, -1.92f, 0f));
+            }
+            return r;
+        }
+
+        private static GameObject ClimbingFrame()
+        {
+            GameObject r = Root("ClimbingFrame");
+            string[] cols = { "#FF595E", "#FFC93C", "#1982C4" };
+            foreach (float x in new[] { -1.2f, 1.2f })
+            foreach (float z in new[] { -1.2f, 1.2f })
+                A.Part("Post", r.transform, A.Box(0.16f, 2.4f, 0.16f, 0.05f), A.Colour("PlayPurple", "#8E7DBE", 0.4f), new Vector3(x, 1.2f, z));
+            for (int level = 0; level < 3; level++)
+            {
+                Material m = A.Colour("Bar" + level, cols[level], 0.4f);
+                float y = 0.6f + level * 0.75f;
+                foreach (float s in new[] { -1.2f, 1.2f })
+                {
+                    A.Part("BarX", r.transform, A.Box(2.4f, 0.1f, 0.1f, 0.03f), m, new Vector3(0f, y, s));
+                    A.Part("BarZ", r.transform, A.Box(0.1f, 0.1f, 2.4f, 0.03f), m, new Vector3(s, y, 0f));
+                }
+            }
+            A.Part("Deck", r.transform, A.Box(2.4f, 0.14f, 2.4f, 0.05f), A.Wood, new Vector3(0f, 2.4f, 0f));
+            A.Part("FlagPole", r.transform, A.Box(0.06f, 1.2f, 0.06f, 0.02f), A.White, new Vector3(1.1f, 3f, 1.1f));
+            Transform flag = A.Pivot("Flag", r.transform, new Vector3(1.1f, 3.45f, 1.1f));
+            A.Part("Cloth", flag, A.Pennant(0.7f, 0.5f), A.Colour("PlayRed", "#FF595E", 0.4f), new Vector3(0.35f, 0f, 0f), new Vector3(0f, 0f, 90f));
+            return r;
+        }
+
+        private static GameObject Roundabout()
+        {
+            GameObject r = Root("Roundabout");
+            A.Part("Base", r.transform, A.Disc(0.4f, 0.3f, 0.05f, 16), A.DarkSteel, Vector3.zero);
+            Transform spin = A.Pivot("Spin", r.transform, new Vector3(0f, 0.3f, 0f));
+            A.Part("Plate", spin, A.Disc(1.6f, 0.18f, 0.05f, 28), A.Colour("PlayYellow", "#FFC93C", 0.4f), Vector3.zero);
+            A.Part("Centre", spin, A.Disc(0.5f, 0.22f, 0.05f, 16), A.Colour("PlayRed", "#FF595E", 0.4f), new Vector3(0f, 0.05f, 0f));
+            for (int i = 0; i < 4; i++)
+            {
+                float a = i * Mathf.PI * 0.5f;
+                Vector3 p = new Vector3(Mathf.Cos(a) * 1.1f, 0.6f, Mathf.Sin(a) * 1.1f);
+                A.Part("Handle", spin, A.Box(0.08f, 0.8f, 0.08f, 0.03f), A.Colour("PlayBlue", "#1982C4", 0.4f), p);
+                A.Part("Knob", spin, A.Sphere(0.1f), A.Colour("PlayRed", "#FF595E", 0.4f), p + Vector3.up * 0.42f);
+            }
+            return r;
+        }
+
+        private static GameObject Bench()
+        {
+            GameObject r = Root("Bench");
+            A.Part("Seat", r.transform, A.Box(2f, 0.1f, 0.5f, 0.03f), A.Wood, new Vector3(0f, 0.5f, 0f));
+            A.Part("Back", r.transform, A.Box(2f, 0.45f, 0.08f, 0.03f), A.Wood, new Vector3(0f, 0.85f, -0.25f));
+            foreach (float x in new[] { -0.85f, 0.85f })
+                A.Part("Leg", r.transform, A.Box(0.1f, 0.5f, 0.45f, 0.03f), A.DarkSteel, new Vector3(x, 0.25f, 0f));
+            return r;
+        }
+
+        /// <summary>A rainbow arch with cloud feet (yard decoration unlock). One combined mesh per colour band.</summary>
+        private static GameObject Rainbow()
+        {
+            GameObject r = Root("Rainbow");
+            string[] cols = { "#FF595E", "#FF9F1C", "#FFC93C", "#6BCB77", "#1982C4", "#8E7DBE" };
+            Mesh seg = A.Box(0.42f, 0.4f, 0.4f, 0.05f);
+            const int n = 22;
+            for (int b = 0; b < cols.Length; b++)
+            {
+                float radius = 7.2f - b * 0.38f;
+                var parts = new (Mesh, Matrix4x4)[n];
+                for (int i = 0; i < n; i++)
+                {
+                    float a = (i + 0.5f) / n * Mathf.PI;
+                    var pos = new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f);
+                    float arc = Mathf.PI * radius / n;
+                    parts[i] = (seg, Matrix4x4.TRS(pos, Quaternion.Euler(0f, 0f, a * Mathf.Rad2Deg + 90f), new Vector3(arc / 0.42f * 1.08f, 0.95f, 1f)));
+                }
+                Mesh band = A.SaveMesh("RainbowBand" + b, LittleBuildersWorld.Core.MeshFactory.Combine("RainbowBand" + b, parts));
+                A.Part("Band" + b, r.transform, band, A.Colour("Rainbow" + b, cols[b], 0.35f), Vector3.zero);
+            }
+            foreach (float x in new[] { -6.3f, 6.3f })
+            {
+                Transform puff = A.Pivot("Cloud", r.transform, new Vector3(x, 0.4f, 0f));
+                A.Part("Puff", puff, A.Sphere(1.1f), A.Cloud, Vector3.zero);
+                A.Part("Puff", puff, A.Sphere(0.8f), A.Cloud, new Vector3(0.9f, -0.15f, 0.2f));
+                A.Part("Puff", puff, A.Sphere(0.8f), A.Cloud, new Vector3(-0.9f, -0.15f, -0.2f));
+            }
+            return r;
+        }
+
+        /// <summary>Planks and bright playground panels on a pallet (the play-parts depot).</summary>
+        private static GameObject PartsPallet()
+        {
+            GameObject r = Root("PartsPallet");
+            A.Part("Pallet", r.transform, A.Box(1.6f, 0.2f, 1.6f, 0.04f), A.Wood, new Vector3(0f, 0.1f, 0f));
+            for (int i = 0; i < 3; i++)
+                A.Part("Plank", r.transform, A.Box(1.5f, 0.14f, 0.4f, 0.03f), A.Wood, new Vector3(0f, 0.28f + i * 0.15f, -0.45f + i * 0.45f));
+            string[] cols = { "#FF595E", "#FFC93C", "#1982C4" };
+            for (int i = 0; i < 3; i++)
+                A.Part("Panel", r.transform, A.Box(1.3f, 0.14f, 1.3f, 0.05f), A.Colour("PlayPanel" + i, cols[i], 0.4f), new Vector3(0f, 0.75f + i * 0.16f, 0f), new Vector3(0f, i * 25f, 0f));
             return r;
         }
 

@@ -24,6 +24,18 @@ namespace LittleBuildersWorld.Activities
         [SerializeField] private StageReveal[] m_Reveals = new StageReveal[0];
         [SerializeField] private int m_StageStars = 1;
         [SerializeField] private int m_ProjectBonus = 3;
+        [Tooltip("Unlock id that opens this project (an Area unlock). Empty = open from the start.")] [SerializeField] private string m_RequiredUnlock;
+        [Tooltip("Shown while the project is still locked (a barrier and sign at the gate).")] [SerializeField] private GameObject[] m_LockedVisuals = new GameObject[0];
+
+        public bool IsLocked
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(m_RequiredUnlock)) return false;
+                GameServices s = GameServices.Instance;
+                return s != null && !s.Stars.IsUnlocked(m_RequiredUnlock);
+            }
+        }
 
         public int StageCount => m_Stages.Length;
         public ActivityBase CurrentStage => Progress != null && !Progress.IsComplete ? m_Stages[Progress.Stage] : null;
@@ -44,6 +56,8 @@ namespace LittleBuildersWorld.Activities
 
         protected override void Start()
         {
+            if (GameServices.Instance != null) GameServices.Instance.Stars.Unlocked += OnUnlocked;
+            foreach (GameObject g in m_LockedVisuals) if (g != null) g.SetActive(IsLocked);
             RestoreFromSave();
             for (int i = 0; i < m_Stages.Length; i++)
             {
@@ -53,8 +67,26 @@ namespace LittleBuildersWorld.Activities
             }
         }
 
+        protected virtual void OnDestroy()
+        {
+            if (GameServices.Instance != null) GameServices.Instance.Stars.Unlocked -= OnUnlocked;
+        }
+
+        private void OnUnlocked(Progression.UnlockDefinition u)
+        {
+            if (u == null || u.id != m_RequiredUnlock) return;
+            foreach (GameObject g in m_LockedVisuals)
+            {
+                if (g == null || !g.activeSelf) continue;
+                Tween.Scale(g.transform, Vector3.zero, 0.35f, Ease.InBack, () => g.SetActive(false));
+            }
+            foreach (ActivityBase child in m_Stages) if (child != null) child.RefreshMarker();
+        }
+
         public bool IsChildOpen(ActivityBase child) =>
-            Progress != null && !Progress.IsComplete && m_Stages[Progress.Stage] == child;
+            Progress != null && !Progress.IsComplete && !IsLocked && m_Stages[Progress.Stage] == child;
+
+        public ActivityBase StageActivity(int index) => index >= 0 && index < m_Stages.Length ? m_Stages[index] : null;
 
         internal void OnChildCompleted(ActivityBase child)
         {
@@ -74,6 +106,7 @@ namespace LittleBuildersWorld.Activities
             StartCoroutine(RevealRoutine(finished, completed));
             if (!completed) m_Stages[Progress.Stage].RefreshMarker();
             StageFinished?.Invoke(this, finished);
+            ActivityEvents.RaiseStageFinished(this, finished, completed);
         }
 
         private IEnumerator RevealRoutine(int stage, bool projectDone)

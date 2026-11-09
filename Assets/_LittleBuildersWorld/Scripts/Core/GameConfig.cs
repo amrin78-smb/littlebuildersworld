@@ -38,6 +38,16 @@ namespace LittleBuildersWorld.Core
         public Sprite iconUnload;
         public Sprite iconStar;
 
+        [Header("Helper (speech bubble + voice)")]
+        public Guide.GuideLibrary guide;
+        public Sprite mascot;
+        public Sprite iconHouse;
+        public Sprite iconRoad;
+        public Sprite iconPlayground;
+        public Sprite iconExit;
+        public Sprite iconReset;
+        public Sprite iconArrow;
+
         [Header("Frame rate")]
         [Tooltip("Requested frame rate. Budget phones deliver less; see ANDROID_BUILD_GUIDE.md.")] public int targetFrameRate = 60;
 

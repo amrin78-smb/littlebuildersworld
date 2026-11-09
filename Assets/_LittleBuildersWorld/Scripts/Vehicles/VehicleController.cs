@@ -129,8 +129,11 @@ namespace LittleBuildersWorld.Vehicles
             m_Model.ReconcileMeasuredSpeed(MeasuredSpeed);
             m_Model.Step(input, dt);
 
-            if (Mathf.Abs(m_Model.YawRate) > 0.001f)
-                m_Body.MoveRotation(m_Body.rotation * Quaternion.Euler(0f, m_Model.YawRate * dt, 0f));
+            // Rebuilt from yaw alone every step: whatever a collision does, the body can never pitch or roll
+            // (a tilted collision box could otherwise "climb" and lift the vehicle off the ground).
+            float yaw = m_Body.rotation.eulerAngles.y + m_Model.YawRate * dt;
+            Quaternion upright = Quaternion.Euler(0f, yaw, 0f);
+            if (Quaternion.Angle(m_Body.rotation, upright) > 0.01f) m_Body.MoveRotation(upright);
 
             Vector3 flatForward = new Vector3(forward.x, 0f, forward.z).normalized;
             Vector3 drive;
@@ -142,9 +145,9 @@ namespace LittleBuildersWorld.Vehicles
             }
             else
             {
-                // Airborne (edge of a ramp): keep falling under normal gravity, which the physics step adds.
+                // Airborne (edge of a ramp or a bump): never rise, keep falling under the physics step's gravity.
                 drive = flatForward * m_Model.Speed;
-                drive.y = Mathf.Min(velocity.y, 1f);
+                drive.y = Mathf.Min(velocity.y, 0f);
             }
             m_Body.linearVelocity = drive;
             m_Body.angularVelocity = Vector3.zero;
@@ -155,7 +158,7 @@ namespace LittleBuildersWorld.Vehicles
             Vector3 origin = m_Body.position + Vector3.up * m_GroundProbeHeight;
             if (Physics.Raycast(origin, Vector3.down, out RaycastHit hit, m_GroundProbeLength, m_GroundMask, QueryTriggerInteraction.Ignore))
             {
-                m_Grounded = hit.distance <= m_GroundProbeHeight + 0.35f;
+                m_Grounded = hit.distance <= m_GroundProbeHeight + 0.6f;
                 m_GroundNormal = Vector3.Slerp(m_GroundNormal, hit.normal, 0.3f);
             }
             else

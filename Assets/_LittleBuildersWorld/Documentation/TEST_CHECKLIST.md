@@ -4,10 +4,10 @@
 
 | Command | What it covers |
 |---|---|
-| `Tools/setup.sh` | Regenerates everything; `ProjectValidator` fails on any empty reference, missing scene/prefab script, duplicate activity id, wrong vehicle count, missing ARMv7/ARM64 or PowerVR filter |
-| `Tools/run_tests.sh EditMode` | Drive model (acceleration cap, auto-brake on release, brake→reverse, turn-in-place, steering smoothing, reverse steering, no hidden speed when blocked, input clamping); save round-trip, missing/corrupt/unversioned/newer files, sanitising, no personal-data fields; star rewards pay once, unlocks never removed; activity lifecycle, restore clamping, abandon & resume |
+| `Tools/setup.sh` | Regenerates everything; `ProjectValidator` fails on any empty reference, missing scene/prefab script, duplicate activity id, wrong vehicle count, missing ARMv7/ARM64 or PowerVR filter, a helper line without text/voice, an activity hint without a helper line |
+| `Tools/run_tests.sh EditMode` | Drive model (acceleration cap, auto-brake on release, brake→reverse, turn-in-place, steering smoothing, reverse steering, no hidden speed when blocked, input clamping); save round-trip, missing/corrupt/unversioned/newer files, sanitising, no personal-data fields; star rewards pay once, unlocks never removed; activity lifecycle, restore clamping, abandon & resume; helper timing (flicker guard, quick button hints, voice cooldown, repeat, event priority/hold, tap-to-replay, praise rate limit), language resolution and English fallback |
 | `Tools/run_tests.sh PlayMode` | Real town scene: enter/drive/release-stop/exit, cannot enter a vehicle in use, hold button released by the pointer watchdog, excavator scoop → one action at a time, leaving keeps the load |
-| `Tools/autopilot.sh` | Linux test player, full scripted play-through with real driving along routes and the action button: menu → town; basic driving; yard dig pit loads the truck; house clear / dig / walls / roof / doors / garden; roadworks clear / fill / roll; stuck detection + reset; out-of-world recovery; pause/resume; save + reload restores stars and finished projects. Screenshots + `autopilot_report.txt` in `Logs/AutoPilot/` |
+| `Tools/autopilot.sh` | Linux test player, full scripted play-through with real driving along routes and the action button: menu → town; basic driving; yard dig pit loads the truck; house clear / dig / walls / roof / doors / garden; roadworks clear / fill / roll; playground unlock + clear / sandpit / slide / swings / soft mats; helper lines (welcome, pick a machine, scoop hint, walls celebration, depot load hint) and Thai switch; stuck detection + reset; out-of-world recovery; pause/resume; save + reload restores stars and finished projects. Screenshots + `autopilot_report.txt` in `Logs/AutoPilot/` |
 | `Tools/build_android.sh` | APK build + `verify_apk.sh` (both ABIs, PowerVR filter, landscape) |
 
 ## Manual (device) — must be done by a person
@@ -33,4 +33,8 @@
 | 17 | **Second launch on PowerVR** | Install, play, swipe away, reopen, drive | |
 | 18 | Performance | FPS in the yard and at the finished house with all vehicles there (Redmi A3) | |
 | 19 | Parent gate | Toddler taps gear → nothing; adult hold → pause; Reset needs the sum | |
-| 20 | Muted play | Mute all; the game is still understandable | |
+| 20 | Muted play | Mute all; the game is still understandable (bubbles + pictures) | |
+| 21 | Helper voice | Voice is clear and not too loud over music; lines do not pile up or repeat annoyingly | |
+| 22 | Helper bubble | Readable at arm's length; never covers the machine or a button; tap the foreman → repeats | |
+| 23 | Thai | Settings ▸ Thai helper: bubble text and voice in Thai; check tone marks look right | |
+| 24 | Playground | Opens at 6 stars (barriers pop away + "the playground site is open"); all 5 stages build | |

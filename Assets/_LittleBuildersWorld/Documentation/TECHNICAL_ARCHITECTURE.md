@@ -16,7 +16,7 @@ Assets/_LittleBuildersWorld/
                  VehicleAudio, VehiclePaint, VehicleInteraction, VehicleActionController, IActionProvider,
                  ExcavatorArm, DumpTruckBed, DebrisPusher, LoadKind
     Activities/  ActivityProgress (pure), ActivityBase, ProjectActivity, HouseConstructionActivity,
-                 RoadworksActivity, ExcavationActivity + DigZone, MaterialDeliveryActivity + DeliveryZone,
+                 RoadworksActivity, PlaygroundActivity, ExcavationActivity + DigZone, MaterialDeliveryActivity + DeliveryZone,
                  LoadingBay, BulldozerClearingActivity, RoadRollerActivity + RoughPatch, ActivityMarker,
                  ActivityEvents / GuidanceRegistry
     World/       ActivityZone, PushableDebris, RecoveryPoint, SoilPilePool, GuidanceArrow, CelebrationFX,
@@ -24,6 +24,8 @@ Assets/_LittleBuildersWorld/
     Progression/ StarLedger (pure), BuilderStarsManager, WorldProgressionManager
     Save/        SaveData, SaveSerializer (pure), SaveSystem
     Audio/       AudioManager, AudioLibrary
+    Guide/       GuideDirector (what to say), GuideScheduler (pure timing rules), GuideBubbleUI (foreman + bubble),
+                 GuideLibrary + Language (words and voice per language)
     UI/          HUDController, HoldButton, TapButton, HoldToConfirmButton, VirtualJoystick, DriveBubbles,
                  WorldTapCatcher, VehicleSelectorUI, StarCelebrationUI, PauseMenu, SettingsPanel, ParentGate,
                  MainMenuUI, AspectRatioScaler, SafeAreaFitter, Pulse
@@ -31,9 +33,9 @@ Assets/_LittleBuildersWorld/
   Tests/EditMode, Tests/PlayMode
   Scenes/ Boot, MainMenu, ConstructionTown      (generated)
   Prefabs/ Vehicles, Environment, Activities, VFX   (generated)
-  ScriptableObjects/ Vehicles (VehicleProfile ×4), Audio (AudioLibrary)
+  ScriptableObjects/ Vehicles (VehicleProfile ×4), Audio (AudioLibrary, GuideLibrary)
   Resources/LBW_GameConfig.asset              (vehicles, unlocks, paints, audio, HUD icons)
-  Art/, Audio/                                 (generated, original)
+  Art/, Audio/                                 (generated, original; Audio/Voice from Tools/voice, see below)
 ```
 
 **Everything under Art, Audio, Prefabs, ScriptableObjects, Resources and Scenes is generated** by
@@ -93,9 +95,32 @@ pre-authored parts per stage (bouncy pop-in); it pays the stage stars and the pr
 | House 1 dig (`house_dig`) | Excavator | as above; reveals the foundation slab |
 | House 2–5 (`house_walls/roof/doors/garden`) | Dump truck | `LoadingBay` (Load) at the brick depot or yard hopper; `DeliveryZone` (Unload) tips the bed |
 | Roadworks 0 clear / 1 fill / 2 roll | Bulldozer / Dump truck / Road roller | as above; `RoadRollerActivity` smooths `RoughPatch`es the roller drives over |
+| Playground 0 clear / 1 sandpit dig / 2 slide / 3 swings / 4 soft mats (`pg_*`) | Bulldozer / Excavator / Dump truck ×2 (2 loads each, play-parts depot) / Road roller | same building blocks; `PlaygroundActivity` stays locked (`m_RequiredUnlock = area_playground`, 6 stars) with barriers across the gate until the Area unlock |
 
 Any load is accepted anywhere (no wrong answers). Unloading outside a zone leaves a small pooled heap
 (`SoilPilePool`, capped at 8).
+
+## Helper (speech bubble + voice)
+
+The words come from one file, `Tools/voice/voice_lines.json` (key, English, Thai). `Tools/voice/generate_voice.sh`
+turns it into WAV clips **offline** (Kokoro TTS for English, VachanaTTS for Thai; models cached in
+`~/.cache/lbw-tts`), and Setup builds `GuideLibrary` (text + clip per language) from the same file.
+
+* `GuideDirector` (town, `Systems`) computes one hint key every 0.25 s from the game state, in this order: on foot →
+  `pick_<vehicle>` for the machine whose project stage is open nearest the yard; machine busy → keep; stuck →
+  `stuck`; action button offered → `do_scoop/do_dump/do_load/do_unload`; otherwise the guidance target's
+  `GuideHint` (each activity's `m_HintKey`, loading bays say `get_load`); nothing to do → `no_job`.
+  Events: a finished stage says `<activityId>_done` (priority 80), a finished project `<projectId>_done` (100),
+  unlocks `unlock_paint/decor/area` (90), small progress a rate-limited `praise_<verb>`; `welcome` once per run.
+* `GuideScheduler` (pure, unit-tested) decides when: a hint must hold 0.8 s (0.3 s for button hints) before it shows;
+  events beat hints and hold them while spoken; a line is spoken at most once per 20 s (the bubble still shows);
+  an unchanged hint is repeated after 30 s; tapping the foreman repeats it now.
+* `GuideBubbleUI`: the foreman portrait (top left, under the corner buttons) with a bubble of 2–3 short lines plus a
+  picture (vehicle portrait or the button icon to press). It tucks away after ~6 s; the foreman stays and bobs while
+  talking. Music ducks under the voice (`AudioManager`).
+* Language: grown-up settings toggle (Thai helper); default follows the device language. Thai text uses the Mitr
+  font as a TextMeshPro fallback of Fredoka. TMP does no Thai mark shaping, so stacked vowel/tone marks can sit
+  slightly off — readable, but check on a phone.
 
 ## Camera
 

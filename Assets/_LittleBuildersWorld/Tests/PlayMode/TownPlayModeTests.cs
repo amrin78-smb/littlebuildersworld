@@ -61,6 +61,34 @@ namespace LittleBuildersWorld.Tests
         }
 
         [UnityTest]
+        public IEnumerator Steering_Turns_And_Vehicle_Stays_On_Ground()
+        {
+            var interaction = Object.FindFirstObjectByType<VehicleInteraction>();
+            var input = Object.FindFirstObjectByType<TouchInputController>();
+            Vehicle truck = Get(VehicleType.DumpTruck);
+            Assert.IsTrue(interaction.Enter(truck));
+            input.SetScriptedInput(new DriveInput(0f, 1f, 0f));
+            for (int i = 0; i < 100; i++) yield return new WaitForFixedUpdate();
+            input.SetScriptedInput(new DriveInput(0f, 0f, 0f));
+            for (int i = 0; i < 125; i++) yield return new WaitForFixedUpdate();
+            float yaw0 = truck.transform.eulerAngles.y;
+            input.SetScriptedInput(new DriveInput(1f, 0.6f, 0f));
+            float maxY = 0f;
+            for (int i = 0; i < 75; i++)
+            {
+                yield return new WaitForFixedUpdate();
+                maxY = Mathf.Max(maxY, truck.transform.position.y);
+            }
+            float turned = Mathf.Abs(Mathf.DeltaAngle(yaw0, truck.transform.eulerAngles.y));
+            Debug.Log($"[LBW Test] turned {turned:0}° speed {truck.Controller.Speed:0.0} at {truck.transform.position} maxY {maxY:0.00}");
+            Assert.Greater(turned, 20f, "steering right turns the truck");
+            Assert.Less(maxY, 0.45f, "the truck stays on the ground");
+            Assert.Less(Vector3.Angle(truck.transform.up, Vector3.up), 1f, "the truck stays upright");
+            input.SetScriptedInput(null);
+            interaction.Exit();
+        }
+
+        [UnityTest]
         public IEnumerator Hold_Button_Releases_When_No_Pointer_Is_Down()
         {
             var interaction = Object.FindFirstObjectByType<VehicleInteraction>();

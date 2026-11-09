@@ -9,7 +9,7 @@ namespace LittleBuildersWorld.UI
 {
     /// <summary>
     /// Grown-up settings: music, sound effects and voice volumes, voice prompts on/off, steering style, Easy Drive,
-    /// steering sensitivity, and reset progress (behind the parent gate). Changes apply at once and are saved.
+    /// steering sensitivity, helper language (English / Thai), and reset progress (behind the parent gate). Changes apply at once and are saved.
     /// </summary>
     public sealed class SettingsPanel : MonoBehaviour
     {
@@ -20,6 +20,7 @@ namespace LittleBuildersWorld.UI
         [SerializeField] private Toggle m_Joystick;
         [SerializeField] private Toggle m_EasyDrive;
         [SerializeField] private Slider m_Sensitivity;
+        [Tooltip("On = the helper speaks and writes Thai; off = English.")] [SerializeField] private Toggle m_Thai;
         [SerializeField] private TapButton m_Reset;
         [SerializeField] private TapButton m_Close;
         [SerializeField] private ParentGate m_Gate;
@@ -36,6 +37,7 @@ namespace LittleBuildersWorld.UI
             m_Joystick?.onValueChanged.AddListener(_ => Store());
             m_EasyDrive?.onValueChanged.AddListener(_ => Store());
             m_Sensitivity?.onValueChanged.AddListener(_ => Store());
+            m_Thai?.onValueChanged.AddListener(_ => Store());
             if (m_Reset != null) m_Reset.Pressed += AskReset;
             if (m_Close != null) m_Close.Pressed += Close;
         }
@@ -65,6 +67,7 @@ namespace LittleBuildersWorld.UI
             if (m_Joystick != null) m_Joystick.isOn = d.controls.steering == SteeringMode.Joystick;
             if (m_EasyDrive != null) m_EasyDrive.isOn = d.controls.easyDrive;
             if (m_Sensitivity != null) m_Sensitivity.value = d.controls.steerSensitivity;
+            if (m_Thai != null) m_Thai.isOn = Guide.Language.Current == Guide.Language.Thai;
             m_Binding = false;
         }
 
@@ -81,6 +84,7 @@ namespace LittleBuildersWorld.UI
             if (m_Joystick != null) d.controls.steering = m_Joystick.isOn ? SteeringMode.Joystick : SteeringMode.Buttons;
             if (m_EasyDrive != null) d.controls.easyDrive = m_EasyDrive.isOn;
             if (m_Sensitivity != null) d.controls.steerSensitivity = m_Sensitivity.value;
+            if (m_Thai != null) d.language = m_Thai.isOn ? Guide.Language.Thai : Guide.Language.English;
             d.Sanitise();
             s.Audio.ApplySettings();
             if (m_Input != null) m_Input.ApplySettings();

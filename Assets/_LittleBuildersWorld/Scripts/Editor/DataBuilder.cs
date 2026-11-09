@@ -15,6 +15,83 @@ namespace LittleBuildersWorld.EditorTools
         public const string VehicleData = E.Root + "/ScriptableObjects/Vehicles";
         public const string ConfigPath = E.Root + "/Resources/" + GameConfig.ResourcePath + ".asset";
         public const string AudioPath = E.Root + "/ScriptableObjects/Audio/AudioLibrary.asset";
+        public const string GuidePath = E.Root + "/ScriptableObjects/Audio/GuideLibrary.asset";
+        public const string VoiceFolder = E.Root + "/Audio/Voice";
+        public const string VoiceLinesPath = "Tools/voice/voice_lines.json";
+
+        [System.Serializable]
+        private sealed class VoiceLinesFile
+        {
+            public string[] languages;
+            public VoiceLine[] lines;
+        }
+
+        [System.Serializable]
+        private sealed class VoiceLine
+        {
+            public string key;
+            public string en;
+            public string th;
+        }
+
+        /// <summary>
+        /// The helper's words and voice: reads Tools/voice/voice_lines.json (the single source) and pairs each line
+        /// with its generated clip in Audio/Voice/&lt;lang&gt;/&lt;key&gt;.wav (made offline by Tools/voice/generate_voice.sh).
+        /// Also returns every Thai character used, for the font atlas.
+        /// </summary>
+        public static Guide.GuideLibrary BuildGuide(out string thaiCharacters)
+        {
+            thaiCharacters = "";
+            var lib = E.LoadOrCreateSO<Guide.GuideLibrary>(GuidePath);
+            if (!System.IO.File.Exists(VoiceLinesPath))
+            {
+                Debug.LogError("[LBW] Missing " + VoiceLinesPath);
+                return lib;
+            }
+            var file = JsonUtility.FromJson<VoiceLinesFile>(System.IO.File.ReadAllText(VoiceLinesPath));
+            var lines = new List<Guide.GuideLibrary.Line>();
+            var thai = new HashSet<char>();
+            int missing = 0;
+            foreach (VoiceLine l in file.lines)
+            {
+                var line = new Guide.GuideLibrary.Line { key = l.key, en = l.en, th = l.th, voiceEn = Voice("en", l.key), voiceTh = Voice("th", l.key) };
+                if (line.voiceEn == null) missing++;
+                if (!string.IsNullOrEmpty(l.th) && line.voiceTh == null) missing++;
+                if (l.th != null) foreach (char ch in l.th) thai.Add(ch);
+                lines.Add(line);
+            }
+            foreach (char ch in "ภาษาไทย") thai.Add(ch);
+            if (missing > 0) Debug.LogWarning($"[LBW] {missing} voice clips missing: run Tools/voice/generate_voice.sh (the bubble text still works).");
+            lib.lines = lines.ToArray();
+            EditorUtility.SetDirty(lib);
+            var sb = new System.Text.StringBuilder();
+            foreach (char ch in thai) sb.Append(ch);
+            thaiCharacters = sb.ToString();
+            return lib;
+        }
+
+        private static AudioClip Voice(string lang, string key)
+        {
+            string path = $"{VoiceFolder}/{lang}/{key}.wav";
+            var imp = AssetImporter.GetAtPath(path) as AudioImporter;
+            if (imp == null) return null;
+            // Small and quick: mono Vorbis kept compressed in memory (≈1 MB for every line in both languages).
+            AudioImporterSampleSettings st = imp.defaultSampleSettings;
+            bool dirty = !imp.forceToMono || st.loadType != AudioClipLoadType.CompressedInMemory || st.compressionFormat != AudioCompressionFormat.Vorbis
+                         || Mathf.Abs(st.quality - 0.55f) > 0.01f || imp.loadInBackground;
+            if (dirty)
+            {
+                imp.forceToMono = true;
+                imp.loadInBackground = false;
+                st.loadType = AudioClipLoadType.CompressedInMemory;
+                st.compressionFormat = AudioCompressionFormat.Vorbis;
+                st.quality = 0.55f;
+                st.sampleRateSetting = AudioSampleRateSetting.OptimizeSampleRate;
+                imp.defaultSampleSettings = st;
+                imp.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
+        }
 
         public static Dictionary<VehicleType, VehicleProfile> BuildProfiles()
         {
@@ -116,7 +193,7 @@ namespace LittleBuildersWorld.EditorTools
             return lib;
         }
 
-        public static GameConfig BuildConfig(Dictionary<VehicleType, VehicleProfile> profiles, AudioLibrary audio)
+        public static GameConfig BuildConfig(Dictionary<VehicleType, VehicleProfile> profiles, AudioLibrary audio, Guide.GuideLibrary guide)
         {
             var cfg = E.LoadOrCreateSO<GameConfig>(ConfigPath);
             cfg.vehicles = new[] { profiles[VehicleType.Excavator], profiles[VehicleType.DumpTruck], profiles[VehicleType.Bulldozer], profiles[VehicleType.RoadRoller] };
@@ -126,24 +203,37 @@ namespace LittleBuildersWorld.EditorTools
             cfg.iconLoad = IconPainter.Sprite("icon_load");
             cfg.iconUnload = IconPainter.Sprite("icon_unload");
             cfg.iconStar = IconPainter.Sprite("icon_star");
+            cfg.guide = guide;
+            cfg.mascot = IconPainter.Sprite("mascot_foreman");
+            cfg.iconHouse = IconPainter.Sprite("icon_house");
+            cfg.iconRoad = IconPainter.Sprite("icon_road");
+            cfg.iconPlayground = IconPainter.Sprite("icon_slide");
+            cfg.iconExit = IconPainter.Sprite("icon_exit");
+            cfg.iconReset = IconPainter.Sprite("icon_reset");
+            cfg.iconArrow = IconPainter.Sprite("icon_go");
             cfg.targetFrameRate = 60;
 
-            // Stars come from: yard dig pit 1, house 6 stages + 3 bonus, roadworks 3 stages + 3 bonus = 16.
+            // Stars come from: yard dig pit 1, house 6 stages + 3 bonus, roadworks 3 stages + 3 bonus,
+            // playground 5 stages + 3 bonus = 24.
             Sprite paint = IconPainter.Sprite("icon_paint");
             cfg.unlocks = new[]
             {
                 new UnlockDefinition { id = "paint_sunny", kind = UnlockKind.Paint, starsRequired = 2, icon = paint, colour = E.Hex("#FFD447") },
                 new UnlockDefinition { id = "decor_flags", kind = UnlockKind.YardDecoration, starsRequired = 4, icon = IconPainter.Sprite("icon_flags"), colour = E.Hex("#FF595E") },
-                new UnlockDefinition { id = "paint_ocean", kind = UnlockKind.Paint, starsRequired = 7, icon = paint, colour = E.Hex("#4EA8DE") },
-                new UnlockDefinition { id = "decor_balloons", kind = UnlockKind.YardDecoration, starsRequired = 10, icon = IconPainter.Sprite("icon_balloons"), colour = E.Hex("#FFC93C") },
-                new UnlockDefinition { id = "paint_candy", kind = UnlockKind.Paint, starsRequired = 14, icon = paint, colour = E.Hex("#FF8FC7") }
+                new UnlockDefinition { id = "area_playground", kind = UnlockKind.Area, starsRequired = 6, icon = IconPainter.Sprite("icon_slide"), colour = E.Hex("#6BCB77") },
+                new UnlockDefinition { id = "paint_ocean", kind = UnlockKind.Paint, starsRequired = 8, icon = paint, colour = E.Hex("#4EA8DE") },
+                new UnlockDefinition { id = "decor_balloons", kind = UnlockKind.YardDecoration, starsRequired = 11, icon = IconPainter.Sprite("icon_balloons"), colour = E.Hex("#FFC93C") },
+                new UnlockDefinition { id = "paint_candy", kind = UnlockKind.Paint, starsRequired = 15, icon = paint, colour = E.Hex("#FF8FC7") },
+                new UnlockDefinition { id = "paint_forest", kind = UnlockKind.Paint, starsRequired = 19, icon = paint, colour = E.Hex("#2A9D8F") },
+                new UnlockDefinition { id = "decor_rainbow", kind = UnlockKind.YardDecoration, starsRequired = 23, icon = IconPainter.Sprite("icon_rainbow"), colour = E.Hex("#FF9F1C") }
             };
             cfg.paints = new[]
             {
                 new PaintScheme { id = "factory", unlockId = "", primary = Color.white, secondary = Color.white },
                 new PaintScheme { id = "sunny", unlockId = "paint_sunny", primary = E.Hex("#FFD447"), secondary = E.Hex("#FFFFFF") },
                 new PaintScheme { id = "ocean", unlockId = "paint_ocean", primary = E.Hex("#4EA8DE"), secondary = E.Hex("#9BF6FF") },
-                new PaintScheme { id = "candy", unlockId = "paint_candy", primary = E.Hex("#FF8FC7"), secondary = E.Hex("#B388EB") }
+                new PaintScheme { id = "candy", unlockId = "paint_candy", primary = E.Hex("#FF8FC7"), secondary = E.Hex("#B388EB") },
+                new PaintScheme { id = "forest", unlockId = "paint_forest", primary = E.Hex("#2A9D8F"), secondary = E.Hex("#E9F5DB") }
             };
             EditorUtility.SetDirty(cfg);
             AssetDatabase.SaveAssets();

@@ -71,6 +71,8 @@ namespace LittleBuildersWorld.Activities
             m_Busy = false;
         }
 
+        public string GuideHint(Vehicle vehicle) => "get_load";
+
         /// <summary>Points an empty truck here when some delivery is waiting.</summary>
         public bool TryGetGuidance(Vehicle vehicle, out Vector3 position, out int priority)
         {

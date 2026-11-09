@@ -46,8 +46,21 @@ namespace LittleBuildersWorld.Audio
         {
             if (m_Save == null) return;
             AudioSettingsData a = m_Save.Data.audio;
-            m_Music.volume = a.music * 0.5f;
+            m_MusicBase = a.music * 0.5f;
+            m_Music.volume = m_MusicBase;
             m_Voice.volume = a.voicePrompts ? a.voice : 0f;
+        }
+
+        private float m_MusicBase = 0.3f;
+        private float m_Duck = 1f;
+
+        private void Update()
+        {
+            // Music dips gently under the helper's voice so the words are easy to hear.
+            if (m_Music == null) return;
+            float target = VoicePlaying ? 0.45f : 1f;
+            m_Duck = Mathf.MoveTowards(m_Duck, target, Time.unscaledDeltaTime * 2.5f);
+            m_Music.volume = m_MusicBase * m_Duck;
         }
 
         public void PlayMusic(AudioClip clip)
@@ -75,13 +88,26 @@ namespace LittleBuildersWorld.Audio
             s.PlayOneShot(e.clip, Mathf.Clamp01((e.volume <= 0f ? 1f : e.volume) * volumeScale) * SfxVolume);
         }
 
-        /// <summary>Optional spoken prompt. Skipped if one is still playing, so lines never pile up.</summary>
-        public void PlayVoice(AudioClip clip)
+        public bool VoicePlaying => m_Voice != null && m_Voice.isPlaying;
+        public bool VoiceEnabled => m_Save == null || (m_Save.Data.audio.voicePrompts && m_Save.Data.audio.voice > 0.01f);
+
+        /// <summary>
+        /// Optional spoken prompt. Skipped if one is still playing (lines never pile up) unless
+        /// <paramref name="interrupt"/> is set for something more important. Returns true if it started.
+        /// </summary>
+        public bool PlayVoice(AudioClip clip, bool interrupt = false)
         {
-            if (clip == null || m_Voice == null || m_Voice.isPlaying) return;
-            if (m_Save != null && !m_Save.Data.audio.voicePrompts) return;
+            if (clip == null || m_Voice == null || !VoiceEnabled) return false;
+            if (m_Voice.isPlaying && !interrupt) return false;
+            m_Voice.Stop();
             m_Voice.clip = clip;
             m_Voice.Play();
+            return true;
+        }
+
+        public void StopVoice()
+        {
+            if (m_Voice != null) m_Voice.Stop();
         }
     }
 }

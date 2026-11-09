@@ -44,7 +44,9 @@ namespace LittleBuildersWorld.EditorTools
                 ConfigureAppIcon();
                 Step("Config", 0.55f);
                 var audio = DataBuilder.BuildAudio();
-                DataBuilder.BuildConfig(profiles, audio);
+                var guide = DataBuilder.BuildGuide(out string thaiCharacters);
+                UIBuilder.ThaiFallback(thaiCharacters);
+                DataBuilder.BuildConfig(profiles, audio, guide);
                 Step("Props", 0.6f);
                 PropBuilder.BuildAll();
                 AssetDatabase.SaveAssets();

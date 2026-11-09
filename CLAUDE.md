@@ -10,3 +10,4 @@
 - Commands: `Tools/setup.sh`, `Tools/run_tests.sh [EditMode|PlayMode|all]`, `Tools/autopilot.sh`, `Tools/build_android.sh [release]`. Only one Unity process may open the project at a time (the Linux player run is fine in parallel).
 - Never claim a feature/build/test works unless verified; keep `Documentation/IMPLEMENTATION_STATUS.md` honest and current.
 - Use only original or clearly licensed assets; record them in `ART_ASSET_REGISTER.md`.
+- Helper words (speech bubble + voice) have one source: `Tools/voice/voice_lines.json` (English + Thai). After editing it run `Tools/voice/generate_voice.sh` (offline TTS: Kokoro EN, VachanaTTS TH; no recordings) and `Tools/setup.sh`. Every activity's `m_HintKey` and every `<activityId>_done` line must exist there (the validator checks).

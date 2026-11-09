@@ -311,6 +311,13 @@ namespace LittleBuildersWorld.EditorTools
                 if (layer == 1 && (x + z) % 2 != 0) continue;
                 A.Part("Brick", bricks, A.Box(0.6f, 0.4f, 0.85f, 0.08f), brickMats[n++ % brickMats.Length], new Vector3(x * 0.68f, 0.22f + layer * 0.42f, z * 0.95f));
             }
+            // Playground parts: planks with bright red / yellow / blue panels on top.
+            Transform parts = A.Pivot("Load_PlayParts", bed, new Vector3(0f, 0.18f, 1.75f));
+            for (int i = 0; i < 3; i++)
+                A.Part("Plank", parts, A.Box(1.9f, 0.16f, 0.5f, 0.04f), A.Wood, new Vector3(0f, 0.12f, -1f + i));
+            string[] panelCols = { "#FF595E", "#FFC93C", "#1982C4" };
+            for (int i = 0; i < 3; i++)
+                A.Part("Panel", parts, A.Box(1.4f, 0.16f, 1.1f, 0.05f), A.Colour("PlayPanel" + i, panelCols[i], 0.4f), new Vector3(0f, 0.32f + i * 0.17f, -0.9f + i * 0.9f), new Vector3(0f, (i - 1) * 12f, 0f));
             Transform dump = A.Pivot("DumpPoint", c.Root.transform, new Vector3(0f, 0.2f, -4.4f));
 
             Colliders(c, new Vector3(0f, 1.5f, -0.1f), new Vector3(2.5f, 1.6f, 5.6f), 2.0f, 0.6f);
@@ -318,11 +325,12 @@ namespace LittleBuildersWorld.EditorTools
             var tool = root.AddComponent<DumpTruckBed>();
             E.Set(tool, "m_Vehicle", root.GetComponent<Vehicle>());
             E.Set(tool, "m_BedPivot", bed);
-            E.SetArray(tool, "m_LoadVisuals", new Object[] { soilLoad.transform, gravelLoad.transform, bricks });
+            E.SetArray(tool, "m_LoadVisuals", new Object[] { soilLoad.transform, gravelLoad.transform, bricks, parts });
             E.Set(tool, "m_DumpPoint", dump);
             soilLoad.SetActive(false);
             gravelLoad.SetActive(false);
             bricks.gameObject.SetActive(false);
+            parts.gameObject.SetActive(false);
             return Save(root, VehicleType.DumpTruck);
         }
 

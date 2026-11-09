@@ -7,7 +7,7 @@ if [ "${SKIP_BUILD:-0}" != 1 ]; then
   echo "LINUX BUILD exit=$?"; grep "\[LBW Build\]" Logs/linux_build.log
 fi
 rm -rf Logs/AutoPilot; mkdir -p Logs/AutoPilot
-timeout 1500 xvfb-run -a -s "-screen 0 1280x720x24" Builds/Linux/LittleBuildersWorld.x86_64 -force-glcore -screen-fullscreen 0 \
+timeout 2700 xvfb-run -a -s "-screen 0 1280x720x24" Builds/Linux/LittleBuildersWorld.x86_64 -force-glcore -screen-fullscreen 0 \
   -screen-width 1280 -screen-height 720 -lbw-autopilot -lbw-shots "$PWD/Logs/AutoPilot" -logFile "$PWD/Logs/autopilot.log"
 code=$?
 echo "AUTOPILOT exit=$code"

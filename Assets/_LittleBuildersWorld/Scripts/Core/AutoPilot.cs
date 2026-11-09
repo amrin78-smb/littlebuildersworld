@@ -30,6 +30,8 @@ namespace LittleBuildersWorld.Core
         private VehicleInteraction m_Interaction;
         private TouchInputController m_Input;
         private VehicleActionController m_Actions;
+        private Guide.GuideDirector m_Guide;
+        private Guide.GuideBubbleUI m_Bubble;
         private readonly Dictionary<VehicleType, Vehicle> m_Vehicles = new Dictionary<VehicleType, Vehicle>();
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -42,6 +44,28 @@ namespace LittleBuildersWorld.Core
             var ap = go.AddComponent<AutoPilot>();
             int i = Array.IndexOf(args, "-lbw-shots");
             ap.m_ShotDir = i >= 0 && i + 1 < args.Length ? args[i + 1] : Path.Combine(Application.persistentDataPath, "AutoPilot");
+        }
+
+        private float m_NextFloatLog;
+
+        /// <summary>Diagnostic: report a driven vehicle that is off the ground on flat land, and what holds it up.</summary>
+        private void FixedUpdate()
+        {
+            Vehicle v = m_Interaction != null ? m_Interaction.Current : null;
+            if (v == null || Time.time < m_NextFloatLog) return;
+            Vector3 p = v.transform.position;
+            if (p.y < 0.45f) return;
+            m_NextFloatLog = Time.time + 2f;
+            string under = "nothing";
+            var hits = Physics.RaycastAll(p + Vector3.up * 6f, Vector3.down, 12f, ~0, QueryTriggerInteraction.Ignore);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            var names = new List<string>();
+            foreach (RaycastHit h in hits) names.Add($"{h.collider.name}@{h.point.y:0.00}(L{h.collider.gameObject.layer})");
+            if (names.Count > 0) under = string.Join(", ", names);
+            var contacts = new List<string>();
+            foreach (Collider c in Physics.OverlapBox(p + Vector3.up * 0.3f, new Vector3(1.6f, 0.4f, 3.2f), v.transform.rotation, ~0, QueryTriggerInteraction.Ignore))
+                if (c.attachedRigidbody != v.Controller.Body) contacts.Add($"{c.name}(L{c.gameObject.layer})");
+            Log($"FLOAT {v.Type} y={p.y:0.00} tilt={Vector3.Angle(v.transform.up, Vector3.up):0.0} grounded={v.Controller.IsGrounded} vy={v.Controller.Body.linearVelocity.y:0.00} under=[{under}] near=[{string.Join(", ", contacts)}]");
         }
 
         private void Start()
@@ -78,6 +102,13 @@ namespace LittleBuildersWorld.Core
             yield return null;
         }
 
+        private static IEnumerator PhysicsSeconds(float seconds)
+        {
+            int steps = Mathf.CeilToInt(seconds / Time.fixedDeltaTime);
+            var wait = new WaitForFixedUpdate();
+            for (int i = 0; i < steps; i++) yield return wait;
+        }
+
         private static IEnumerator Wait(float seconds)
         {
             yield return new WaitForSeconds(seconds);
@@ -99,7 +130,10 @@ namespace LittleBuildersWorld.Core
             Check(SceneManager.GetActiveScene().name == SceneFlow.Town, "main menu → town");
             yield return Wait(2f);
             Bind();
+            yield return ExpectHelper("welcome", 6f, "greets the child in the town");
             yield return Shot("02_yard_overview");
+            yield return ExpectHelper("pick_bulldozer", 8f, "on foot: suggests the machine that has a job");
+            yield return Shot("02b_helper_pick");
             Time.timeScale = 2f;
 
             yield return BasicDriving();
@@ -108,6 +142,8 @@ namespace LittleBuildersWorld.Core
             yield return HouseDig();
             yield return HouseDeliveries();
             yield return Roadworks();
+            yield return Playground();
+            yield return HelperLanguage();
             yield return StuckRecovery();
             yield return PauseResume();
             yield return SaveReload();
@@ -136,9 +172,22 @@ namespace LittleBuildersWorld.Core
             m_Interaction = FindFirstObjectByType<VehicleInteraction>();
             m_Input = FindFirstObjectByType<TouchInputController>();
             m_Actions = FindFirstObjectByType<VehicleActionController>();
+            m_Guide = FindFirstObjectByType<Guide.GuideDirector>();
+            m_Bubble = FindFirstObjectByType<Guide.GuideBubbleUI>();
             m_Vehicles.Clear();
             foreach (Vehicle v in Vehicle.All) m_Vehicles[v.Type] = v;
             Check(m_Interaction != null && m_Input != null && m_Actions != null && m_Vehicles.Count == 4, "town systems and 4 vehicles present");
+            Check(m_Guide != null && m_Bubble != null, "helper (speech bubble + voice director) present");
+        }
+
+        /// <summary>Waits until the helper has shown the given line (bubble text; voice if enabled).</summary>
+        private IEnumerator ExpectHelper(string key, float timeout, string what)
+        {
+            float t = 0f;
+            while (m_Guide != null && m_Guide.LastShownKey != key && t < timeout) { t += Time.unscaledDeltaTime; yield return null; }
+            bool ok = m_Guide != null && m_Guide.LastShownKey == key;
+            Check(ok && m_Bubble.IsExpanded && m_Bubble.ShownText.Length > 0, $"helper: {what} ('{key}': \"{(m_Bubble != null ? m_Bubble.ShownText : "")}\")");
+            if (!ok && m_Guide != null) Log($"   (helper last said '{m_Guide.LastShownKey}', current hint '{m_Guide.ComputeHint()}')");
         }
 
         // ------------------------------------------------------------------ helpers
@@ -254,7 +303,7 @@ namespace LittleBuildersWorld.Core
             Check(Mathf.Abs(truck.Controller.Speed) < 0.05f, "releasing every control stops the vehicle (auto-brake)");
             float yaw0 = truck.transform.eulerAngles.y;
             m_Input.SetScriptedInput(new DriveInput(1f, 0.6f, 0f));
-            yield return Wait(1.5f);
+            yield return PhysicsSeconds(1.5f); // physics time: at a few FPS the player drops physics steps
             float turned = Mathf.Abs(Mathf.DeltaAngle(yaw0, truck.transform.eulerAngles.y));
             Check(turned > 20f, $"steering right turns the truck ({turned:0}°)");
             m_Input.SetScriptedInput(new DriveInput(0f, 0f, 1f));
@@ -283,6 +332,7 @@ namespace LittleBuildersWorld.Core
             yield return Enter(VehicleType.Excavator);
             Vehicle exc = m_Interaction.Current;
             yield return Drive(exc, new[] { new Vector3(-15f, 0, 2f), new Vector3(-14f, 0, -3f) }, 2.5f, 25f, "excavator to dig pit");
+            yield return ExpectHelper("do_scoop", 4f, "at the dig pit: says to tap the scoop button");
             yield return Shot("04_excavator_at_pit");
             var bed = m_Vehicles[VehicleType.DumpTruck].GetTool<DumpTruckBed>();
             var arm = exc.GetTool<ExcavatorArm>();
@@ -405,6 +455,7 @@ namespace LittleBuildersWorld.Core
                     yield return Drive(truck, new[] { new Vector3(34f, 0, 62f), drop }, 3f, 25f, "back to house");
                 }
                 yield return Act(ActionIcon.Unload, $"unload for {stages[i]}");
+                if (i == 0) yield return ExpectHelper("house_walls_done", 10f, "celebrates the walls");
                 yield return Wait(3f);
                 Check(house.Progress.Stage == 3 + i, $"house stage '{stages[i]}' built (project stage {house.Progress.Stage}/6)");
                 yield return Shot($"11_house_{i}_{stages[i]}");
@@ -448,6 +499,121 @@ namespace LittleBuildersWorld.Core
             yield return Wait(3f);
             Check(works.Progress.IsComplete, "roadworks project complete");
             yield return Shot("15_roadworks_done");
+        }
+
+        private IEnumerator Playground()
+        {
+            Log("--- Playground (third project)");
+            var pg = Find<PlaygroundActivity>("playground");
+            Check(pg != null && !pg.IsLocked, $"playground opened by the stars ({GameServices.Instance.Stars.Total} stars)");
+            if (pg == null) yield break;
+            Vector3[] toGate = { new Vector3(-3f, 0, -6f), new Vector3(-2f, 0, -19f), new Vector3(0f, 0, -40f), new Vector3(1f, 0, -52f), new Vector3(-4f, 0, -60f), new Vector3(-30f, 0, -60f), new Vector3(-34f, 0, -66f), new Vector3(-34f, 0, -73f) };
+
+            yield return Enter(VehicleType.Bulldozer);
+            Vehicle dozer = m_Interaction.Current;
+            yield return ExpectHelper("pg_clear", 6f, "bulldozer: push the old boxes");
+            bool[] r = { false };
+            yield return Drive(dozer, Prepend(new Vector3(6f, 0, 4f), toGate), 3f, 35f, "bulldozer to playground", r);
+            Check(r[0], "bulldozer drives yard → playground unaided");
+            yield return Shot("19_playground_arrival");
+            yield return Push(Find<BulldozerClearingActivity>("pg_clear"), -27f, -40f, -73.5f, "playground clearing", 300f);
+            dozer.ReturnHome();
+
+            yield return Enter(VehicleType.Excavator);
+            Vehicle exc = m_Interaction.Current;
+            yield return Drive(exc, Prepend(new Vector3(-16f, 0, 4f), toGate, new Vector3(-40f, 0, -78f), new Vector3(-42f, 0, -80.5f)), 2.5f, 45f, "excavator to sandpit");
+            var dig = Find<ExcavationActivity>("pg_dig");
+            Check(dig.IsOpen, "sandpit dig is the open stage");
+            for (int i = 0; i < 3; i++)
+            {
+                yield return Act(ActionIcon.Scoop, $"sandpit scoop {i + 1}");
+                yield return Act(ActionIcon.Dump, $"sandpit dump {i + 1}");
+            }
+            Check(dig.Progress.IsComplete, "sandpit dug");
+            yield return Wait(2f);
+            yield return Shot("20_sandpit");
+            m_Interaction.Exit();
+            exc.ReturnHome();
+
+            yield return Enter(VehicleType.DumpTruck);
+            Vehicle truck = m_Interaction.Current;
+            var bed = truck.GetTool<DumpTruckBed>();
+            Vector3 depot = new Vector3(-21.5f, 0, -45f);
+            Vector3[] depotToGate = { new Vector3(-26f, 0, -54f), new Vector3(-33f, 0, -61f), new Vector3(-34f, 0, -68f), new Vector3(-34f, 0, -74f) };
+            Vector3[] gateToDepot = { new Vector3(-34f, 0, -66f), new Vector3(-30f, 0, -57f), depot };
+            if (!bed.IsLoaded) yield return Drive(truck, new[] { new Vector3(-6f, 0, 4f), new Vector3(-3f, 0, -6f), new Vector3(-2f, 0, -19f), new Vector3(-4f, 0, -30f), new Vector3(-14f, 0, -40f), depot }, 2.5f, 35f, "truck to play-parts depot");
+            else yield return Drive(truck, Prepend(new Vector3(-6f, 0, 4f), toGate), 3f, 35f, "loaded truck to playground");
+            for (int i = 0; i < 4; i++)
+            {
+                if (!bed.IsLoaded)
+                {
+                    if (i > 0) yield return Drive(truck, gateToDepot, 2.5f, 30f, "back to the depot");
+                    if (i == 0) yield return ExpectHelper("do_load", 4f, "at the depot: says to fill the truck");
+                    yield return Act(ActionIcon.Load, $"load play parts {i + 1}");
+                    Check(bed.Kind == LoadKind.PlayParts && bed.IsFull, "truck full of play parts");
+                    if (i == 0) yield return Shot("21_play_parts_load");
+                    yield return Drive(truck, depotToGate, 3f, 30f, "parts to the playground");
+                }
+                yield return Act(ActionIcon.Unload, $"unload play parts {i + 1}");
+                yield return Wait(3f);
+            }
+            Check(pg.Progress.Stage == 4, $"slide and swings built (project stage {pg.Progress.Stage}/5)");
+            yield return Shot("22_slide_swings");
+            yield return Drive(truck, new[] { new Vector3(-34f, 0, -66f) }, 3f, 20f, "truck leaves the playground");
+            m_Interaction.Exit();
+            truck.ReturnHome();
+
+            yield return Enter(VehicleType.RoadRoller);
+            Vehicle roller = m_Interaction.Current;
+            yield return Drive(roller, Prepend(new Vector3(16f, 0, 4f), toGate), 3f, 35f, "roller to playground");
+            Vector3[] mats = { new Vector3(-36.5f, 0, -78.5f), new Vector3(-43f, 0, -77f), new Vector3(-34f, 0, -84.5f), new Vector3(-30f, 0, -77f) };
+            for (int pass = 0; pass < 2 && !pg.Progress.IsComplete; pass++)
+            {
+                foreach (Vector3 m in mats)
+                {
+                    if (pg.Progress.IsComplete) break;
+                    yield return Drive(roller, new[] { m }, 1.2f, 20f, "roll a bumpy patch");
+                    m_Input.SetScriptedInput(new DriveInput(0f, 0.6f, 0f));
+                    yield return Wait(0.8f);
+                    yield return Stop(roller);
+                }
+            }
+            yield return Wait(3f);
+            Check(pg.Progress.IsComplete, "playground project complete");
+            Check(GameServices.Instance.Stars.HasReward("playground.complete"), "playground completion bonus paid");
+            yield return Shot("23_playground_done");
+            m_Interaction.Exit();
+            yield return Wait(1.5f);
+            yield return Shot("24_playground_overview");
+        }
+
+        private static Vector3[] Prepend(Vector3 first, Vector3[] route, params Vector3[] after)
+        {
+            var l = new List<Vector3> { first };
+            l.AddRange(route);
+            l.AddRange(after);
+            return l.ToArray();
+        }
+
+        private IEnumerator HelperLanguage()
+        {
+            Log("--- Helper language");
+            GameServices s = GameServices.Instance;
+            s.Save.Data.language = Guide.Language.Thai;
+            float t = 0f;
+            while (!HasThai(m_Bubble.ShownText) && t < 12f) { t += Time.unscaledDeltaTime; yield return null; }
+            Check(HasThai(m_Bubble.ShownText), $"Thai setting: the bubble speaks Thai (\"{m_Bubble.ShownText}\")");
+            yield return Shot("25_helper_thai");
+            s.Save.Data.language = Guide.Language.English;
+            t = 0f;
+            while (HasThai(m_Bubble.ShownText) && t < 12f) { t += Time.unscaledDeltaTime; yield return null; }
+            Check(!HasThai(m_Bubble.ShownText), "back to English");
+        }
+
+        private static bool HasThai(string text)
+        {
+            foreach (char c in text ?? "") if (c >= '\u0E00' && c <= '\u0E7F') return true;
+            return false;
         }
 
         private IEnumerator StuckRecovery()
@@ -503,6 +669,7 @@ namespace LittleBuildersWorld.Core
             Check(GameServices.Instance.Stars.Total == stars, "stars survive reload");
             Check(Find<HouseConstructionActivity>("house").Progress.IsComplete, "finished house restored after reload");
             Check(Find<RoadworksActivity>("roadworks").Progress.IsComplete, "finished roadworks restored after reload");
+            Check(Find<PlaygroundActivity>("playground").Progress.IsComplete, "finished playground restored after reload");
             yield return Shot("18_after_reload");
         }
     }

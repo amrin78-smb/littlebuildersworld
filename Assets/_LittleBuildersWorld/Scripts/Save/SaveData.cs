@@ -23,6 +23,8 @@ namespace LittleBuildersWorld.Save
         public string selectedVehicle = "";
         public AudioSettingsData audio = new AudioSettingsData();
         public ControlSettingsData controls = new ControlSettingsData();
+        /// <summary>Helper language: "en", "th", or "" = follow the device language.</summary>
+        public string language = "";
 
         public ActivityRecord GetActivity(string id, bool create)
         {
@@ -64,6 +66,8 @@ namespace LittleBuildersWorld.Save
             selectedVehicle ??= "";
             audio ??= new AudioSettingsData();
             controls ??= new ControlSettingsData();
+            language ??= "";
+            if (language != "" && language != "en" && language != "th") language = "";
             builderStars = Mathf.Max(0, builderStars);
             activities.RemoveAll(a => a == null || string.IsNullOrEmpty(a.id));
             foreach (ActivityRecord a in activities)

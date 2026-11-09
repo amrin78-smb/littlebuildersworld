@@ -1,7 +1,8 @@
 # Implementation Status — Little Builders World
 
 _Last updated: 2026-11-09. "Verified" means checked by an automated test or the automated play-through in this
-repository; nothing here has yet been run on a physical Android phone._
+repository. v0.1.0-test was played by the owner on a Galaxy S25 Ultra ("plays ok"); the helper, playground and
+physics fix below (v0.2.0-test) are not yet tested on a phone._
 
 ## Baseline
 
@@ -16,12 +17,11 @@ repository; nothing here has yet been run on a physical Android phone._
 | Check | Result |
 |---|---|
 | Generator + validator (`Tools/setup.sh`) | **Passes** — no empty references, scenes and prefabs complete, ARM/PowerVR settings present |
-| EditMode tests | **23 / 23 pass** |
-| PlayMode tests (real town scene) | **3 / 3 pass** |
-| Automated play-through (`Tools/autopilot.sh`) | Run 5: **all checks passed**. Final run 7 (after the last fixes): 16/16 stars, all 5 unlocks, house + roadworks complete and restored after reload; **1 check failed** ("steering right turns the truck": 4°, it measured 72° in runs 1–6 — timing flake at ~5 FPS, see below). |
-| Android development APK | **Builds** (73 MB); `verify_apk.sh`: `arm64-v8a` + `armeabi-v7a` ✔, `.*PowerVR.*` present in `globalgamemanagers.assets.split5` ✔, landscape ✔ |
-| Android release APK | **Builds** (57 MB); both ABIs ✔, PowerVR filter ✔, landscape ✔, **no INTERNET permission** ✔ (stripped by `AndroidManifestPostProcess`) |
-| On a physical phone | **Not yet tested** — see Blockers |
+| EditMode tests | **34 / 34 pass** (adds helper timing, language and Thai mark placement) |
+| PlayMode tests (real town scene) | **4 / 4 pass** (adds: steering turns the truck 69°, stays on the ground and upright) |
+| Automated play-through (`Tools/autopilot.sh`) | Run 11 (final): **24/24 stars, all 8 unlocks; house, roadworks and playground complete and restored after reload; helper lines checked (welcome, pick a machine, scoop, walls celebration, playground hints, depot load) and the Thai switch; 0 floating-vehicle events**. 1 check failed: "steering right turns the truck" reads 4° in the Linux test player only — the same manoeuvre in the PlayMode test turns 69°, so it is a test-player artefact (see below). |
+| Android release APK v0.2.0 (code 2) | **Builds** (~60 MB); `verify_apk.sh`: `arm64-v8a` + `armeabi-v7a` ✔, `.*PowerVR.*` filter ✔, landscape ✔, **no INTERNET permission** ✔ |
+| On a physical phone | v0.1.0 played on a Galaxy S25 Ultra by the owner ("plays ok"; asked for voice, text bubbles, more content → this update). v0.2.0 not yet tested on a phone; Redmi A3 still untested |
 
 ## Feature status
 
@@ -45,11 +45,16 @@ repository; nothing here has yet been run on a physical Android phone._
 | Easy Drive (one-finger driving) | Done (default on) |
 | Settings: music / SFX / voice volume, voice toggle, joystick, Easy Drive, sensitivity, reset behind parent gate | Done; not covered by automated tests |
 | Audio: synthesised SFX, engine hum, two music loops | Done |
-| Voice prompts (Should-have) | **Not done** — no voice assets with clear licensing; channel exists |
-| Friendly builder mascot (Should-have) | Partial — a resident waves at the finished house; no mascot guide |
+| Voice prompts (Should-have) | **Done** — 47 helper lines in English and Thai, generated offline (Kokoro / VachanaTTS, like Little Burger World); verified the right line is chosen in the play-through; how it sounds is unverified on a phone |
+| Text speech bubbles | **Done** — every voice line also shows in a speech bubble with a picture (vehicle portrait or the button to press); works muted; tap the foreman to repeat |
+| Friendly builder mascot (Should-have) | **Done** — the foreman helper (portrait in the HUD, a waving figure in the yard) |
+| Thai language | **Done** — grown-up setting, defaults to the device language; Mitr font fallback; tone marks placed by `ThaiText` (TMP has no Thai shaping) — check on a phone |
+| Playground project (GDD "Later") | **Done, verified** — opens at 6 stars; bulldozer clear → excavator sandpit → truck slide (2 loads) → truck swings (2 loads, play-parts depot) → roller soft mats → climbing frame, roundabout, children |
+| More unlocks | **Done** — 24 stars total; new: playground area (6), forest paint (19), rainbow arch (23) |
 | Ambient animation (Should-have) | Done (windmill, trees, clouds, flags, beacons, smoke) |
 | Guidance arrow + floating vehicle markers | Done |
 | Stuck/out-of-world recovery | Done, verified |
+| Vehicles staying on the ground | **Fixed** — the play-through's new float diagnostic found vehicles (mostly the truck) rising 0.4–1.8 m: the body could tilt despite the rotation lock, and an airborne vehicle kept any upward speed. The controller now rebuilds an upright rotation every step and never rises while airborne; 0 float events since |
 | Tablet / aspect-ratio scaling (width match below 16:9), safe areas | Implemented; only 16:9 (1280×720) exercised automatically |
 | Android performance | **Unverified** — needs the Redmi A3 |
 
@@ -62,6 +67,11 @@ only where the test's own route was blocked (a parked vehicle in the way, the tr
 excavator's 8.5 m reach). The test now parks/returns vehicles like a tidy player. These are test-route issues, not
 game-logic faults, but the scenarios are worth re-checking by hand on a phone.
 
+Since run 7 the very first steering check in the test player reads 4° (it read 70–78° in runs 1–6), even when
+counted in physics steps. The identical manoeuvre in the real town scene under the PlayMode test runner turns 69°,
+and the player drives every later route normally, so this is treated as an artefact of the test player's start-up,
+not a steering fault. Not root-caused.
+
 Game bugs the play-through found and that are fixed: clearing bounds measured from the wrong origin (rocks were
 reset every tick); rocks could be pushed through a fence and lost (now they return to their start); vehicles could
 ride up onto fences (colliders are now taller invisible walls); a white panel covered the truck bed; crawler-track
@@ -71,7 +81,7 @@ faces were inside out; a null reference during scene unload.
 
 * Vehicle positions and loads in buckets/beds are not saved; vehicles return to their yard bays on load.
 * House parts and the skip have no colliders (vehicles can drive through the finished house walls).
-* Playground and Bridge areas are visual only ("coming later").
+* The Bridge area is not built. Playground props have no colliders (like the house), so machines can drive through them.
 * Lighting is real-time (one directional light) rather than baked.
 * No LODs (meshes are low-poly).
 
@@ -85,5 +95,5 @@ faces were inside out; a null reference during scene unload.
 ## Next steps
 
 1. Install on the Redmi A3; tune speeds/turning and camera distance from a child's real play.
-2. Recorded voice prompts (licensed or self-recorded) and a builder mascot.
-3. House wall colliders; baked lighting pass; playground project.
+2. Tune helper voice volume / repetition from real play; consider a recorded voice.
+3. House wall colliders; baked lighting pass; bridge or beach area; cement mixer / crane.

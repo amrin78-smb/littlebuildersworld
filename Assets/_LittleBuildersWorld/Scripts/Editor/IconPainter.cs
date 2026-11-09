@@ -53,6 +53,9 @@ namespace LittleBuildersWorld.EditorTools
             { "icon_slide", Slide },
             { "icon_flags", Flags },
             { "icon_balloons", Balloons },
+            { "icon_rainbow", RainbowIcon },
+            { "mascot_foreman", Foreman },
+            { "ui_bubble_tail", c => c.FillOutlined(Shape.Polygon(new Vector2(8, 150), new Vector2(150, 200), new Vector2(150, 96)).Round(6), White, 9, Ink) },
             { "icon_arrow3d", c => c.Fill(Shape.Polygon(new Vector2(128, 248), new Vector2(240, 120), new Vector2(170, 120), new Vector2(170, 8), new Vector2(86, 8), new Vector2(86, 120), new Vector2(16, 120)).Round(6), White) },
             // UI shapes (tinted at runtime)
             { "ui_circle", c => c.Fill(Shape.Circle(128, 128, 124), White) },
@@ -280,6 +283,53 @@ namespace LittleBuildersWorld.EditorTools
             c.FillOutlined(Shape.Capsule(60, 40, 60, 210, 12), Steel, 8);
             for (int i = 0; i < 4; i++) c.FillOutlined(Shape.RoundRect(80, 70 + i * 40, 26, 6, 3), Steel, 6);
             c.FillOutlined(Shape.Capsule(100, 210, 220, 40, 22), Red, 9);
+        }
+
+        private static void RainbowIcon(Canvas2D c)
+        {
+            Color[] bands = { Red, Orange, Yellow, Green, Blue, E.Hex("#8E7DBE") };
+            var below = Shape.RoundRect(128, 40, 130, 70, 0);
+            for (int i = 0; i < bands.Length; i++)
+            {
+                float r = 112 - i * 15;
+                c.Fill(Shape.Ring(128, 70, r, 15).Subtract(below).Round(1), bands[i]);
+            }
+            c.FillOutlined(Shape.Union(Shape.Circle(40, 76, 26), Shape.Circle(64, 70, 22), Shape.Circle(20, 66, 16)), White, 6);
+            c.FillOutlined(Shape.Union(Shape.Circle(216, 76, 26), Shape.Circle(192, 70, 22), Shape.Circle(236, 66, 16)), White, 6);
+        }
+
+        /// <summary>The helper: a smiling foreman in a yellow hard hat and high-vis vest (original character).</summary>
+        private static void Foreman(Canvas2D c)
+        {
+            Color skin = E.Hex("#F5C99B");
+            Color vest = E.Hex("#FF9F1C");
+            // Shoulders with a high-vis vest and reflective stripe.
+            c.FillOutlined(Shape.RoundRect(128, 22, 92, 44, 40), vest, 7, Ink);
+            c.Fill(Shape.RoundRect(128, 30, 88, 7, 3), E.Hex("#FFF2B0"));
+            c.Fill(Shape.RoundRect(128, 6, 20, 30, 8), E.Hex("#5FA8D3"));
+            // Head and ears.
+            c.FillOutlined(Shape.Circle(62, 110, 16), skin, 6, Ink);
+            c.FillOutlined(Shape.Circle(194, 110, 16), skin, 6, Ink);
+            c.FillOutlined(Shape.Ellipse(128, 106, 66, 70), skin, 7, Ink);
+            // Rosy cheeks.
+            c.Fill(Shape.Circle(88, 92, 13), new Color(1f, 0.55f, 0.55f, 0.55f), 6f);
+            c.Fill(Shape.Circle(168, 92, 13), new Color(1f, 0.55f, 0.55f, 0.55f), 6f);
+            // Eyes with sparkles, friendly brows.
+            foreach (float x in new[] { 104f, 152f })
+            {
+                c.Fill(Shape.Ellipse(x, 114, 10, 13), Ink);
+                c.Fill(Shape.Circle(x + 3, 119, 4), White);
+                c.Fill(Shape.Capsule(x - 11, 136, x + 11, 139, 3.5f), E.Hex("#6B4A32"));
+            }
+            // Nose and big smile.
+            c.Fill(Shape.Ellipse(128, 100, 9, 7), E.Hex("#E9A97C"));
+            Shape smile = Shape.Ring(128, 92, 26, 8).Intersect(Shape.RoundRect(128, 72, 40, 20, 0));
+            c.Fill(smile.Round(1), Ink);
+            // Hard hat: dome, ridge and brim.
+            Shape dome = Shape.Ellipse(128, 146, 76, 60).Intersect(Shape.RoundRect(128, 190, 90, 46, 0));
+            c.FillOutlined(dome, Yellow, 7, Ink);
+            c.Fill(Shape.RoundRect(128, 172, 12, 30, 6), E.Hex("#FFE28A"));
+            c.FillOutlined(Shape.RoundRect(128, 147, 92, 9, 8), E.Hex("#FFB400"), 6, Ink);
         }
 
         private static void Flags(Canvas2D c)

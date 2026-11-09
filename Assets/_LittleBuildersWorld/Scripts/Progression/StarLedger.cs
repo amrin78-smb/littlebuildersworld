@@ -7,7 +7,9 @@ namespace LittleBuildersWorld.Progression
     public enum UnlockKind
     {
         Paint,
-        YardDecoration
+        YardDecoration,
+        /// <summary>Opens a new building site (e.g. the playground).</summary>
+        Area
     }
 
     /// <summary>A cosmetic reward unlocked when the Builder Star total reaches a threshold. Stars are never spent.</summary>

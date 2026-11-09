@@ -20,7 +20,8 @@ namespace LittleBuildersWorld.EditorTools
             "ActivityBase.m_Marker", "HouseConstructionActivity.m_Marker", "RoadworksActivity.m_Marker",
             "ExcavationActivity.m_OpenVisual", "MaterialDeliveryActivity.m_OpenVisual", "BulldozerClearingActivity.m_OpenVisual",
             "ExcavatorArm.m_Dust", "VehicleVisuals.m_Beacon", "LoadingBay.m_DropVisual", "SettingsPanel.m_Input",
-            "VehicleProfile.engineLoop", "RoadRollerActivity.m_OpenVisual"
+            "VehicleProfile.engineLoop", "RoadRollerActivity.m_OpenVisual",
+            "RoughPatch.m_Pothole" // playground patches go straight from bumpy to soft mat
         };
 
         [MenuItem(ProjectSetup.MenuRoot + "Validate Project", priority = 2)]
@@ -33,6 +34,21 @@ namespace LittleBuildersWorld.EditorTools
             {
                 if (cfg.vehicles.Length != 4 || cfg.vehicles.Any(v => v == null || v.portrait == null)) errors.Add("GameConfig vehicles/portraits incomplete");
                 if (cfg.audio == null || cfg.audio.sfx.Any(s => s.clip == null)) errors.Add("Audio library incomplete");
+                if (cfg.guide == null || cfg.guide.lines.Length == 0) errors.Add("Guide library (helper words) missing");
+                else
+                {
+                    foreach (var l in cfg.guide.lines)
+                    {
+                        if (string.IsNullOrEmpty(l.en) || l.voiceEn == null) errors.Add($"Helper line '{l.key}' has no English text/voice (run Tools/voice/generate_voice.sh)");
+                        if (!string.IsNullOrEmpty(l.th) && l.voiceTh == null) errors.Add($"Helper line '{l.key}' has no Thai voice (run Tools/voice/generate_voice.sh)");
+                    }
+                    // Every hint the director can produce must exist.
+                    foreach (string k in new[] { "welcome", "pick_any", "pick_excavator", "pick_dumptruck", "pick_bulldozer", "pick_roadroller", "no_job", "stuck",
+                                 "follow_arrow", "do_scoop", "do_dump", "do_load", "do_unload", "get_load", "praise_dig", "praise_push", "praise_deliver", "praise_roll",
+                                 "unlock_paint", "unlock_decor", "unlock_area", "house_done", "roadworks_done", "playground_done" })
+                        if (!cfg.guide.Has(k)) errors.Add($"Helper line '{k}' missing from Tools/voice/voice_lines.json");
+                }
+                if (cfg.mascot == null) errors.Add("Helper mascot sprite missing");
             }
 
             if ((PlayerSettings.Android.targetArchitectures & AndroidArchitecture.ARMv7) == 0 ||
@@ -56,6 +72,12 @@ namespace LittleBuildersWorld.EditorTools
                 {
                     var ids = Object.FindObjectsByType<ActivityBase>(FindObjectsInactive.Include, FindObjectsSortMode.None).Select(a => a.Id).ToList();
                     foreach (string dup in ids.GroupBy(i => i).Where(g => g.Count() > 1).Select(g => g.Key)) errors.Add("Duplicate activity id " + dup);
+                    var guideLib = cfg != null ? cfg.guide : null;
+                    foreach (ActivityBase a in Object.FindObjectsByType<ActivityBase>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    {
+                        if (a is ProjectActivity || guideLib == null) continue;
+                        if (!guideLib.Has(a.HintKey)) errors.Add($"Activity '{a.Id}' hint '{a.HintKey}' has no helper line");
+                    }
                     if (Object.FindObjectsByType<Vehicle>(FindObjectsSortMode.None).Length != 4) errors.Add("Town must contain 4 vehicles");
                 }
             }

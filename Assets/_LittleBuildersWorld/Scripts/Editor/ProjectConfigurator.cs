@@ -14,6 +14,9 @@ namespace LittleBuildersWorld.EditorTools
     /// </summary>
     public static class ProjectConfigurator
     {
+        public const string AppVersion = "0.2.0";
+        public const int AppVersionCode = 2;
+
         public const string ApplicationId = "com.studio.littlebuildersworld";
         public const string VulkanFilterPath = E.Root + "/Settings/VulkanDeviceFilters.asset";
         public const string PowerVrPattern = ".*PowerVR.*";
@@ -25,10 +28,11 @@ namespace LittleBuildersWorld.EditorTools
         {
             PlayerSettings.companyName = "Nocvault";
             PlayerSettings.productName = "Little Builders World";
-            if (string.IsNullOrEmpty(PlayerSettings.bundleVersion) || PlayerSettings.bundleVersion == "0.1") PlayerSettings.bundleVersion = "0.1.0";
+            // Bump both for every build handed to testers (phones only update to a higher version code).
+            PlayerSettings.bundleVersion = AppVersion;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, ApplicationId);
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone, ApplicationId);
-            PlayerSettings.Android.bundleVersionCode = Math.Max(1, PlayerSettings.Android.bundleVersionCode);
+            PlayerSettings.Android.bundleVersionCode = Math.Max(AppVersionCode, PlayerSettings.Android.bundleVersionCode);
 
             // Landscape only, both ways round.
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;

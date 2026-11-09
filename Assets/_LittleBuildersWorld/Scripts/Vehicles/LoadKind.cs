@@ -5,6 +5,8 @@ namespace LittleBuildersWorld.Vehicles
     {
         Soil,
         Gravel,
-        Bricks
+        Bricks,
+        /// <summary>Wooden planks and bright panels for the playground.</summary>
+        PlayParts
     }
 }

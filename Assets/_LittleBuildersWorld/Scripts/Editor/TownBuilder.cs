@@ -17,7 +17,7 @@ namespace LittleBuildersWorld.EditorTools
     /// <summary>
     /// Builds ConstructionTown.unity: one compact connected town. Hub-and-spoke: the Construction Yard in the middle,
     /// a square loop road (±60 m) with spurs to it, the House Plot north of the loop, the Roadworks on the east road,
-    /// and the fenced (coming later) Playground site to the south. See Documentation/ART_DIRECTION.md for scale.
+    /// and the Playground (third project, opened by an Area unlock) to the south-west. See Documentation/ART_DIRECTION.md for scale.
     /// </summary>
     public static class TownBuilder
     {
@@ -76,7 +76,7 @@ namespace LittleBuildersWorld.EditorTools
 
             var pool = systems.AddComponent<SoilPilePool>();
             E.Set(pool, "m_PilePrefab", PropBuilder.Get("SoilPile"));
-            E.SetArray(pool, "m_KindMaterials", new Object[] { A.Soil, A.Gravel, A.Brick });
+            E.SetArray(pool, "m_KindMaterials", new Object[] { A.Soil, A.Gravel, A.Brick, A.Wood });
 
             // Guidance arrow: a flat, slightly tilted arrow floating beside the vehicle.
             Transform arrowRoot = new GameObject("GuidanceArrow").transform;
@@ -109,8 +109,14 @@ namespace LittleBuildersWorld.EditorTools
             ambientSo.ApplyModifiedPropertiesWithoutUndo();
 
             var ordered = new List<Vehicle> { vehicles[VehicleType.Excavator], vehicles[VehicleType.DumpTruck], vehicles[VehicleType.Bulldozer], vehicles[VehicleType.RoadRoller] };
-            UIBuilder.BuildTownHud(interaction, actions, input, cam, ordered);
+            UIBuilder.TownHud hud = UIBuilder.BuildTownHud(interaction, actions, input, cam, ordered);
             UIBuilder.EventSystem();
+
+            // The helper: picks what to say (speech bubble + voice) from what the child is doing.
+            var guide = systems.AddComponent<Guide.GuideDirector>();
+            E.Set(guide, "m_Interaction", interaction);
+            E.Set(guide, "m_Actions", actions);
+            E.Set(guide, "m_Bubble", hud.Guide);
 
             EditorSceneManager.SaveScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene(), ScenePath);
             Debug.Log($"[LBW] Town built: {s_Ambient.Count} ambient items, {s_Roads.Count} road segments.");
@@ -195,9 +201,10 @@ namespace LittleBuildersWorld.EditorTools
             return m;
         }
 
-        private static void SetupActivity(ActivityBase a, string id, VehicleType vehicle, Transform focus, ActivityMarker marker, int[] goals = null, bool repeatable = false, int bonus = 0)
+        private static void SetupActivity(ActivityBase a, string id, VehicleType vehicle, Transform focus, ActivityMarker marker, int[] goals = null, bool repeatable = false, int bonus = 0, string hint = null)
         {
             E.Set(a, "m_Id", id);
+            E.Set(a, "m_HintKey", hint ?? "");
             E.Set(a, "m_Vehicle", (int)vehicle);
             E.Set(a, "m_Focus", focus);
             E.Set(a, "m_Marker", marker);
@@ -408,11 +415,17 @@ namespace LittleBuildersWorld.EditorTools
             GameObject arch = Instance("BalloonArch", balloons.transform, new Vector3(23.5f, 0f, 0f), 90f);
             Ambient(arch.transform, AmbientMotion.Kind.Bob, 1.2f, 0.15f);
             Instance("Fountain", balloons.transform, new Vector3(2f, 0.03f, -11f));
+            GameObject rainbow = Instance("Rainbow", yard, new Vector3(0f, 0.03f, -16.8f));
             decorations = new[]
             {
                 new TownSession.Decoration { unlockId = "decor_flags", root = bunting },
-                new TownSession.Decoration { unlockId = "decor_balloons", root = balloons }
+                new TownSession.Decoration { unlockId = "decor_balloons", root = balloons },
+                new TownSession.Decoration { unlockId = "decor_rainbow", root = rainbow }
             };
+
+            // The foreman (the helper in the corner of the screen) waves from between the parking bays.
+            GameObject foreman = Instance("Foreman", yard, new Vector3(0f, 0.03f, 11.5f), 180f, 1.5f);
+            Ambient(foreman.transform.Find("WaveArm"), AmbientMotion.Kind.Wave, 4f, 35f);
 
             s_Keepout.Add((Vector3.zero, 26f));
             Transform view = A.Pivot("YardView", yard, new Vector3(0f, 0f, -1f));
@@ -541,7 +554,7 @@ namespace LittleBuildersWorld.EditorTools
                 E.Set(zone, "m_Activity", act);
                 E.Set(zone, "m_DropPoint", drop);
                 Transform focus = A.Pivot("Focus", g, new Vector3(34f, 0f, 76f));
-                SetupActivity(act, ids[i], VehicleType.DumpTruck, focus, Marker(g, new Vector3(34f, 0f, 76f), VehicleType.DumpTruck, 5.5f));
+                SetupActivity(act, ids[i], VehicleType.DumpTruck, focus, Marker(g, new Vector3(34f, 0f, 76f), VehicleType.DumpTruck, 5.5f), hint: "house_deliver");
                 deliveries.Add(act);
             }
 
@@ -660,29 +673,177 @@ namespace LittleBuildersWorld.EditorTools
             s_Keepout.Add((new Vector3(64f, 0f, 0f), 13f));
         }
 
-        // ------------------------------------------------------------------ playground (visible, opens in a later update)
+        // ------------------------------------------------------------------ playground (third project, opens with an Area unlock)
         private static void Playground()
         {
-            Transform pg = Group("PlaygroundSite_ComingLater");
-            Vector3 c = new Vector3(-36f, 0f, -84f);
-            GameObject dirt = A.Part("Ground", pg, A.GroundRect("Playground_20x14", 20f, 14f, 6f), A.Dirt, c + new Vector3(0f, 0.035f, 0f));
+            Transform pg = Group("Playground");
+            Vector3 c = new Vector3(-34f, 0f, -82f);
+            GameObject dirt = A.Part("PlotGround", pg, A.GroundRect("Playground_28x22", 28f, 22f, 6f), A.Dirt, c + new Vector3(0f, 0.035f, 0f));
             dirt.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
-            for (float x = -8f; x <= 8.1f; x += 4.2f)
+            Static(dirt);
+            Transform fence = Group("Fence", pg);
+            for (float x = -46f; x <= -21.9f; x += 4f)
             {
-                Instance("Fence", pg, c + new Vector3(x, 0f, 7.5f));
-                Instance("Fence", pg, c + new Vector3(x, 0f, -7.5f));
+                Static(Instance("Fence", fence, new Vector3(x, 0f, -93f)));
+                if (x < -39.5f || x > -28.5f) Static(Instance("Fence", fence, new Vector3(x, 0f, -71f))); // gate in the north side
             }
-            for (float z = -5f; z <= 5.1f; z += 4.2f)
+            for (float z = -91f; z <= -72.9f; z += 4.5f)
             {
-                Instance("Fence", pg, c + new Vector3(-10.5f, 0f, z), 90f);
-                Instance("Fence", pg, c + new Vector3(10.5f, 0f, z), 90f);
+                Static(Instance("Fence", fence, new Vector3(-48f, 0f, z), 90f));
+                Static(Instance("Fence", fence, new Vector3(-20f, 0f, z), 90f));
             }
-            GameObject sign = Instance("SignPost", pg, c + new Vector3(0f, 0f, 9.5f), 180f);
+            Static(Instance("Fence", fence, new Vector3(-40.4f, 0f, -71f)));
+            Static(Instance("Fence", fence, new Vector3(-27.6f, 0f, -71f)));
+            foreach (Vector3 p in new[] { new Vector3(-40f, 0, -70.2f), new Vector3(-28f, 0, -70.2f) })
+                Ambient(Instance("FlagPole", pg, p).transform.Find("Flag"), AmbientMotion.Kind.Wave, 2.2f, 9f);
+            GameObject sign = Instance("SignPost", pg, new Vector3(-43f, 0f, -68f), 180f);
             SetSignIcon(sign, "icon_slide");
-            Instance("DebrisCrate", pg, c + new Vector3(-3f, 0.03f, 1f)).GetComponent<PushableDebris>().enabled = false;
-            Instance("BrickPallet", pg, c + new Vector3(3f, 0.03f, -1f));
-            Static(pg.gameObject);
-            s_Keepout.Add((c, 14f));
+            Static(sign);
+
+            var project = pg.gameObject.AddComponent<PlaygroundActivity>();
+            Transform projectFocus = A.Pivot("Focus", pg, c);
+            // Closed until the Area unlock: a barrier across the gate.
+            GameObject gateBarrier = Instance("Barrier", pg, new Vector3(-34f, 0.03f, -70.6f), 0f, 1.8f);
+            GameObject gateBarrier2 = Instance("Barrier", pg, new Vector3(-30f, 0.03f, -70.6f), 0f, 1.8f);
+            GameObject gateBarrier3 = Instance("Barrier", pg, new Vector3(-38f, 0.03f, -70.6f), 0f, 1.8f);
+
+            // Stage 0: bulldozer pushes old boxes and logs onto the striped strip along the east fence.
+            Transform clear = Group("S0_Clear", pg);
+            GameObject skip = Instance("Skip", clear, new Vector3(-22.5f, 0.03f, -82f), 90f);
+            ActivityZone strip = ClearStrip(clear, new Vector3(-23.5f, 0f, -82f), new Vector2(7f, 18f));
+            var slots = new List<Transform>();
+            for (int i = 0; i < 6; i++)
+                slots.Add(A.Pivot("Slot" + i, skip.transform, new Vector3(-1.4f + (i % 3) * 1.4f, 0.4f + (i / 3) * 0.5f, -0.4f + (i % 2) * 0.6f)));
+            string[] kinds = { "DebrisCrate", "DebrisLog", "DebrisCrate", "DebrisRock" };
+            Vector3[] spots = { new Vector3(-35f, 0.03f, -88f), new Vector3(-34f, 0.03f, -84f), new Vector3(-35f, 0.03f, -80f), new Vector3(-34f, 0.03f, -76f) };
+            var debris = new List<Object>();
+            for (int i = 0; i < kinds.Length; i++) debris.Add(Instance(kinds[i], clear, spots[i], i * 61f).GetComponent<PushableDebris>());
+            var clearAct = clear.gameObject.AddComponent<BulldozerClearingActivity>();
+            E.SetArray(clearAct, "m_Debris", debris.ToArray());
+            E.Set(clearAct, "m_Target", strip);
+            E.Set(clearAct, "m_BoundsRadius", 14f);
+            E.SetArray(clearAct, "m_ClearSlots", slots.ToArray());
+            Transform clearFocus = A.Pivot("Focus", clear, new Vector3(-31f, 0f, -82f));
+            SetupActivity(clearAct, "pg_clear", VehicleType.Bulldozer, clearFocus, Marker(clear, new Vector3(-31f, 0f, -82f), VehicleType.Bulldozer));
+
+            // Stage 1: excavator digs the sandpit hole; the sandpit appears.
+            Transform dig = Group("S1_Dig", pg);
+            Vector3 pit = new Vector3(-43f, 0f, -87f);
+            GameObject mound = Instance("SoilMound", dig, pit + new Vector3(0f, 0.03f, 0f), 20f, 0.7f);
+            GameObject stock = Instance("SoilPile", dig, new Vector3(-45.5f, 0.03f, -77f), 0f, 1.3f);
+            Transform outline = Group("SandpitOutline", dig);
+            foreach (var (pos, size) in new[] { (pit + new Vector3(0f, 0.06f, 2.2f), new Vector3(5.4f, 0.08f, 0.25f)), (pit + new Vector3(0f, 0.06f, -2.2f), new Vector3(5.4f, 0.08f, 0.25f)), (pit + new Vector3(-2.7f, 0.06f, 0f), new Vector3(0.25f, 0.08f, 4.4f)), (pit + new Vector3(2.7f, 0.06f, 0f), new Vector3(0.25f, 0.08f, 4.4f)) })
+                A.Part("Line", outline, A.Box(size.x, size.y, size.z, 0.03f), A.White, pos);
+            ActivityZone digArea = Zone("DigArea", dig, pit + new Vector3(1f, 0f, 3f), 8.5f);
+            var digAct = dig.gameObject.AddComponent<ExcavationActivity>();
+            var digZone = dig.gameObject.AddComponent<DigZone>();
+            E.Set(digZone, "m_Zone", digArea);
+            E.Set(digZone, "m_Activity", digAct);
+            E.Set(digZone, "m_Pile", mound.transform);
+            E.Set(digZone, "m_Stockpile", stock.transform);
+            E.Set(digAct, "m_DigZone", digZone);
+            E.Set(digAct, "m_OpenVisual", outline.gameObject);
+            Transform digFocus = A.Pivot("Focus", dig, pit);
+            SetupActivity(digAct, "pg_dig", VehicleType.Excavator, digFocus, Marker(dig, pit, VehicleType.Excavator), new[] { 3 });
+            GameObject sandpit = Instance("Sandpit", pg, pit + new Vector3(0f, 0.03f, 0f));
+
+            // Stages 2–3: dump truck brings play parts (two loads each) for the slide, then the swings.
+            var deliveries = new List<ActivityBase>();
+            string[] ids = { "pg_slide", "pg_swings" };
+            for (int i = 0; i < ids.Length; i++)
+            {
+                Transform g = Group("S" + (i + 2) + "_" + ids[i], pg);
+                var act = g.gameObject.AddComponent<MaterialDeliveryActivity>();
+                var zone = g.gameObject.AddComponent<DeliveryZone>();
+                ActivityZone area = Zone("DropArea", g, new Vector3(-34f, 0f, -76f), 7f);
+                E.Set(zone, "m_Zone", area);
+                E.Set(zone, "m_Activity", act);
+                E.Set(zone, "m_DropPoint", A.Pivot("DropPoint", g, new Vector3(-34f, 0f, -78f)));
+                Transform focus = A.Pivot("Focus", g, new Vector3(-34f, 0f, -77f));
+                SetupActivity(act, ids[i], VehicleType.DumpTruck, focus, Marker(g, new Vector3(-34f, 0f, -77f), VehicleType.DumpTruck, 5.5f), new[] { 2 }, hint: "pg_deliver");
+                deliveries.Add(act);
+            }
+            GameObject slide = Instance("Slide", pg, new Vector3(-29.5f, 0.03f, -89f));
+            GameObject swings = Instance("Swings", pg, new Vector3(-38f, 0.03f, -90.5f));
+            for (int i = 0; i < 2; i++) Ambient(swings.transform.Find("SwingPivot" + i), AmbientMotion.Kind.Sway, 1.6f + i * 0.3f, 14f);
+
+            // Stage 4: road roller flattens four bumpy patches into soft play mats.
+            Transform roll = Group("S4_Roll", pg);
+            var patches = new List<Object>();
+            Vector3[] mats = { new Vector3(-43f, 0f, -77f), new Vector3(-36.5f, 0f, -78.5f), new Vector3(-30f, 0f, -77f), new Vector3(-34f, 0f, -84.5f) };
+            for (int k = 0; k < mats.Length; k++)
+            {
+                Transform p = Group("Patch", roll);
+                p.position = mats[k];
+                GameObject rough = A.Part("Rough", p, A.Dome(2.3f, 0.3f), A.SoilLight, new Vector3(0f, 0.02f, 0f), null, new Vector3(1.25f, 1f, 1.25f));
+                for (int i = 0; i < 5; i++)
+                    A.Part("Lump", rough.transform, A.Sphere(0.32f), A.Soil, new Vector3(Mathf.Cos(i * 1.3f) * 1.3f, 0.22f, Mathf.Sin(i * 1.3f) * 1.3f));
+                GameObject smooth = A.Part("Mat", p, A.Disc(2.4f, 0.04f, 0.015f, 24), A.Colour(k % 2 == 0 ? "SoftMatBlue" : "SoftMatGreen", k % 2 == 0 ? "#4EA8DE" : "#6BCB77", 0.15f), new Vector3(0f, 0.05f, 0f), null, new Vector3(1.25f, 1f, 1.25f));
+                A.NoShadows(p.gameObject);
+                var rp = p.gameObject.AddComponent<RoughPatch>();
+                E.Set(rp, "m_Rough", rough);
+                E.Set(rp, "m_Smooth", smooth);
+                E.Set(rp, "m_Radius", 3.4f);
+                smooth.SetActive(false);
+                patches.Add(rp);
+            }
+            var rollAct = roll.gameObject.AddComponent<RoadRollerActivity>();
+            E.SetArray(rollAct, "m_Patches", patches.ToArray());
+            E.Set(rollAct, "m_PotholesUntilOpen", false);
+            Transform rf = A.Pivot("Focus", roll, new Vector3(-36f, 0f, -80f));
+            SetupActivity(rollAct, "pg_roll", VehicleType.RoadRoller, rf, Marker(roll, new Vector3(-36f, 0f, -80f), VehicleType.RoadRoller));
+
+            // Finished playground: climbing frame and roundabout on the new mats, children playing, a bench, bushes.
+            var finale = new List<GameObject>
+            {
+                Instance("ClimbingFrame", pg, new Vector3(-43f, 0.06f, -77f), 15f),
+                Instance("Roundabout", pg, new Vector3(-30f, 0.06f, -77f)),
+                Instance("Bench", pg, new Vector3(-46.5f, 0.03f, -83f), 90f)
+            };
+            Ambient(finale[1].transform.Find("Spin"), AmbientMotion.Kind.Spin, 40f, 0f);
+            Ambient(finale[0].transform.Find("Flag"), AmbientMotion.Kind.Wave, 2.5f, 12f);
+            (string kid, Vector3 pos, float yaw)[] kids = { ("KidA", new Vector3(-36.5f, 0.06f, -78.5f), 20f), ("KidB", new Vector3(-31.5f, 0.06f, -79f), -30f), ("KidC", new Vector3(-27.5f, 0.03f, -87f), -60f) };
+            foreach (var k in kids)
+            {
+                GameObject kidGo = Instance(k.kid, pg, k.pos, k.yaw, 1.5f);
+                Ambient(kidGo.transform.Find("WaveArm"), AmbientMotion.Kind.Wave, 5f + k.yaw * 0.01f, 40f);
+                finale.Add(kidGo);
+            }
+            foreach (Vector3 p in new[] { new Vector3(-46.5f, 0.03f, -88f), new Vector3(-46.5f, 0.03f, -74f), new Vector3(-22f, 0.03f, -73.5f) })
+                finale.Add(Instance("Bush", pg, p));
+
+            E.SetArray(project, "m_Stages", new Object[] { clearAct, digAct, deliveries[0], deliveries[1], rollAct });
+            E.Set(project, "m_ProjectBonus", 3);
+            E.Set(project, "m_RequiredUnlock", "area_playground");
+            E.SetArray(project, "m_LockedVisuals", new Object[] { gateBarrier, gateBarrier2, gateBarrier3 });
+            SetupActivity(project, "playground", VehicleType.RoadRoller, projectFocus, null);
+            SetReveals(project, new List<(GameObject[], GameObject[])>
+            {
+                (new GameObject[0], new GameObject[0]),
+                (new[] { sandpit }, new[] { mound, outline.gameObject }),
+                (new[] { slide }, new GameObject[0]),
+                (new[] { swings }, new GameObject[0]),
+                (finale.ToArray(), new GameObject[0])
+            });
+            s_Keepout.Add((c, 18f));
+
+            // Play-parts depot between the yard and the playground: short, happy truck trips.
+            Transform depot = Group("PlayPartsDepot");
+            Vector3 dc = new Vector3(-22f, 0f, -45f);
+            GameObject pad = A.Part("Pad", depot, A.GroundRect("Depot_12x9", 12f, 9f, 6f), A.Sand, dc + new Vector3(0f, 0.035f, 0f));
+            pad.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+            Static(pad);
+            foreach (Vector3 p in new[] { dc + new Vector3(-5f, 0.03f, 2.5f), dc + new Vector3(-5f, 0.03f, -1.5f) })
+                Static(Instance("PartsPallet", depot, p, 10f));
+            GameObject stackVis = Instance("PartsPallet", depot, dc + new Vector3(-5f, 0.9f, 0.5f));
+            ActivityZone loadArea = Zone("LoadArea", depot, dc + new Vector3(0.5f, 0f, 0f), 5.5f);
+            var bay = depot.gameObject.AddComponent<LoadingBay>();
+            E.Set(bay, "m_Zone", loadArea);
+            E.Set(bay, "m_Kind", (int)LoadKind.PlayParts);
+            E.Set(bay, "m_DropVisual", stackVis.transform);
+            GameObject ring = A.Part("BayRing", depot, A.Ring(4.6f, 5.2f), A.UnlitCutout("LoadRing", null, "#1982C4"), dc + new Vector3(0.5f, 0.06f, 0f));
+            A.NoShadows(ring);
+            s_Keepout.Add((dc, 9f));
         }
 
         private static void SetSignIcon(GameObject sign, string icon)
@@ -720,6 +881,9 @@ namespace LittleBuildersWorld.EditorTools
             SetSignIcon(toRoad, "icon_road");
             GameObject toYard = Instance("SignPost", lm, new Vector3(-6f, 0f, -53f), 180f);
             SetSignIcon(toYard, "icon_home");
+            GameObject toPlay = Instance("SignPost", lm, new Vector3(-20f, 0f, -66.5f), 180f);
+            SetSignIcon(toPlay, "icon_slide");
+            Static(toPlay);
             Static(toHouse);
             Static(toRoad);
             Static(toYard);
@@ -830,6 +994,7 @@ namespace LittleBuildersWorld.EditorTools
             Point(new Vector3(0f, 0f, 2f), 0f);
             Point(new Vector3(-6f, 0f, -4f), 0f);
             Point(new Vector3(34f, 0f, 70f), 0f);
+            Point(new Vector3(-34f, 0f, -67f), 180f);
         }
     }
 }

@@ -26,6 +26,7 @@ namespace LittleBuildersWorld.Activities
         [SerializeField] private VehicleType m_Vehicle;
         [Tooltip("Where the floating marker sits and the guidance arrow points.")] [SerializeField] private Transform m_Focus;
         [SerializeField] private ActivityMarker m_Marker;
+        [Tooltip("Helper line that says what to do here (key in Tools/voice/voice_lines.json). Empty = the activity id.")] [SerializeField] private string m_HintKey;
 
         private ProjectActivity m_Parent;
         private bool m_Restored;
@@ -36,6 +37,7 @@ namespace LittleBuildersWorld.Activities
         public Vector3 FocusPosition => m_Focus != null ? m_Focus.position : transform.position;
         public bool IsRepeatable => m_Repeatable;
         public ProjectActivity Parent => m_Parent;
+        public string HintKey => string.IsNullOrEmpty(m_HintKey) ? m_Id : m_HintKey;
 
         /// <summary>Open for work right now (its project has reached it and it is not finished).</summary>
         public bool IsOpen => Progress != null && !Progress.IsComplete && (m_Parent == null || m_Parent.IsChildOpen(this));
@@ -110,6 +112,7 @@ namespace LittleBuildersWorld.Activities
                     if (completed && m_CompletionBonus > 0) s.Stars.Award($"{m_Id}.complete", m_CompletionBonus, at);
                 }
                 ActivityEvents.RaiseCelebrate(at, completed && m_Parent == null && !m_Repeatable ? CelebrationSize.Project : CelebrationSize.Stage);
+                ActivityEvents.RaiseStageFinished(this, finished, completed && m_Parent == null && !m_Repeatable);
             }
 
             OnProgressChanged(finished);
@@ -147,6 +150,8 @@ namespace LittleBuildersWorld.Activities
         protected virtual void OnProgressChanged(int finishedStage) { }
 
         protected virtual void OnOpenChanged(bool open) { }
+
+        public virtual string GuideHint(Vehicle vehicle) => HintKey;
 
         public virtual bool TryGetGuidance(Vehicle vehicle, out Vector3 position, out int priority)
         {
