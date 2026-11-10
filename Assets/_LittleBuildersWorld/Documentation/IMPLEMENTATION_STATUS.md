@@ -77,6 +77,16 @@ reset every tick); rocks could be pushed through a fence and lost (now they retu
 ride up onto fences (colliders are now taller invisible walls); a white panel covered the truck bed; crawler-track
 faces were inside out; a null reference during scene unload.
 
+## Playground, garden, people and ground (v0.6.0)
+
+* `build_env.sh` gains three groups and the ground tiles: Play (sandpit, slide, swings, climbing frame, roundabout),
+  Garden (fountain, duck pond, bench, meadow tuft and flowers), People (foreman, KidA–C, resident), Ground (seamless
+  512² grass/dirt/sand). Same pivots as before (SwingPivot0/1, Spin, Flag, Duck0/1, WaveArm), same colliders.
+  Bake time ~14 min for Play + Garden + People.
+* The meadow (130 flowers, 160 tufts) is now one combined mesh on the Garden material.
+* Town scene: 807 mesh renderers (v0.5.0: ~1016), ~526k vertices (v0.5.0: ~511k).
+* EditMode 34/34, PlayMode 6/6, autopilot ALL PASSED (24 stars, 5 route warnings). Not yet measured on the Redmi A3.
+
 ## Blender environment (v0.5.0)
 
 * `Tools/blender/build_env.sh` (Nature/Street ~5 min, Buildings ~35 min with its 2048² atlas) rebuilds trees, bush,

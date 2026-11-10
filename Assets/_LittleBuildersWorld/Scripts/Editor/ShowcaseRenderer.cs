@@ -21,7 +21,7 @@ namespace LittleBuildersWorld.EditorTools
         {
             "TreeRound", "TreePine", "Bush", "Fence", "FlagPole", "Lamp", "SignPost", "Barrier", "Shed", "WaterTower",
             "Windmill", "TownHouseA", "TownHouseB", "Fountain", "Hopper", "BrickPallet", "Skip", "SoilMound",
-            "DebrisRock", "DebrisLog", "DebrisCrate", "DebrisCone", "Resident", "Foreman", "KidA", "KidB",
+            "DebrisRock", "DebrisLog", "DebrisCrate", "DebrisCone", "Resident", "Foreman", "KidA", "KidB", "KidC", "Pond",
             "Sandpit", "Slide", "Swings", "ClimbingFrame", "Roundabout", "Bench", "Rainbow", "PartsPallet",
             "Bunting", "BalloonArch"
         };

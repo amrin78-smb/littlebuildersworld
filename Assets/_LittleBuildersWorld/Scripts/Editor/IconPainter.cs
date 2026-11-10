@@ -359,9 +359,15 @@ namespace LittleBuildersWorld.EditorTools
         private static void WriteTextures()
         {
             var rng = new System.Random(7);
-            Write($"{TextureFolder}/tex_grass.png", Speckle(256, E.Hex("#8ED46F"), new[] { E.Hex("#7CC45E"), E.Hex("#A2DE84"), E.Hex("#86CD67") }, 900, 3, 7, rng));
-            Write($"{TextureFolder}/tex_sand.png", Speckle(256, E.Hex("#E2CB98"), new[] { E.Hex("#CDB27C"), E.Hex("#EED9AC"), E.Hex("#BFA06A") }, 500, 2, 6, rng));
-            Write($"{TextureFolder}/tex_dirt.png", Speckle(256, E.Hex("#B98355"), new[] { E.Hex("#A26F45"), E.Hex("#C99467"), E.Hex("#8E5F3B") }, 600, 2, 7, rng));
+            // Seamless Blender ground tiles (Tools/blender/build_env.sh Ground) when built; painted speckle otherwise.
+            byte[] Ground(string name, System.Func<byte[]> fallback)
+            {
+                string path = $"{E.Root}/Art/Textures/Ground/T_{name}.png";
+                return File.Exists(path) ? File.ReadAllBytes(path) : fallback();
+            }
+            Write($"{TextureFolder}/tex_grass.png", Ground("Grass", () => Speckle(256, E.Hex("#8ED46F"), new[] { E.Hex("#7CC45E"), E.Hex("#A2DE84"), E.Hex("#86CD67") }, 900, 3, 7, rng)));
+            Write($"{TextureFolder}/tex_sand.png", Ground("Sand", () => Speckle(256, E.Hex("#E2CB98"), new[] { E.Hex("#CDB27C"), E.Hex("#EED9AC"), E.Hex("#BFA06A") }, 500, 2, 6, rng)));
+            Write($"{TextureFolder}/tex_dirt.png", Ground("Dirt", () => Speckle(256, E.Hex("#B98355"), new[] { E.Hex("#A26F45"), E.Hex("#C99467"), E.Hex("#8E5F3B") }, 600, 2, 7, rng)));
 
             // Road: asphalt, white edge lines, yellow centre dashes. V runs along the road (1 tile = 10 m).
             var road = new Canvas2D(128, 256, E.Hex("#5C616D"));

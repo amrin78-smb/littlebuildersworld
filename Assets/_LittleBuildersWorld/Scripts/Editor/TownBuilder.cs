@@ -1055,19 +1055,33 @@ namespace LittleBuildersWorld.EditorTools
             var tufts = new List<(Mesh, Matrix4x4)>();
             // Very low-poly pieces: the meadow is hundreds of them.
             Mesh LowLathe(string n, params Vector2[] profile) => A.SaveMesh(n, LittleBuildersWorld.Core.MeshFactory.Lathe(profile, 6, n));
+            // Smooth Blender pieces (Tools/blender/build_env.sh Garden) when built: everything shares one material,
+            // so the whole meadow is a single combined mesh.
+            Mesh tuftModel = BlenderModels.PropMesh("MeadowTuft", "Garden");
+            var flowerModels = new Mesh[petalCols.Length];
+            for (int i = 0; i < flowerModels.Length; i++) flowerModels[i] = BlenderModels.PropMesh("MeadowFlower" + i, "Garden");
+            bool smooth = tuftModel != null && System.Array.TrueForAll(flowerModels, f => f != null);
+            var garden = new List<(Mesh, Matrix4x4)>();
             Mesh petal = LowLathe("MeadowPetal", new Vector2(0f, 0f), new Vector2(0.24f, 0f), new Vector2(0.24f, 0.05f), new Vector2(0f, 0.07f));
             Mesh centre = LowLathe("MeadowCentre", new Vector2(0f, 0f), new Vector2(0.15f, 0f), new Vector2(0.13f, 0.08f), new Vector2(0f, 0.1f));
             Mesh blade = LowLathe("MeadowBlade", new Vector2(0f, 0f), new Vector2(0.09f, 0f), new Vector2(0.02f, 0.5f), new Vector2(0f, 0.55f));
             int flowers = 0, grass = 0;
-            for (int attempt = 0; attempt < 4000 && (flowers < 150 || grass < 200); attempt++)
+            int maxFlowers = smooth ? 130 : 150, maxGrass = smooth ? 160 : 200;
+            for (int attempt = 0; attempt < 4000 && (flowers < maxFlowers || grass < maxGrass); attempt++)
             {
                 var p = new Vector3((float)rng.NextDouble() * 190f - 95f, 0f, (float)rng.NextDouble() * 190f - 95f);
                 if (!Free(p, 1.5f)) continue;
-                if (flowers < 150 && rng.NextDouble() < 0.45)
+                if (flowers < maxFlowers && rng.NextDouble() < 0.45)
                 {
                     // A little flower: five round petals around a yellow centre, lying on the grass.
                     int col = rng.Next(petalCols.Length);
                     float s = 0.8f + (float)rng.NextDouble() * 0.6f;
+                    if (smooth)
+                    {
+                        garden.Add((flowerModels[col], Matrix4x4.TRS(p, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f), Vector3.one * s)));
+                        flowers++;
+                        continue;
+                    }
                     for (int k = 0; k < 4; k++)
                     {
                         float a = k / 4f * Mathf.PI * 2f + 0.4f;
@@ -1076,8 +1090,15 @@ namespace LittleBuildersWorld.EditorTools
                     centres.Add((centre, Matrix4x4.TRS(p + new Vector3(0f, 0.07f, 0f), Quaternion.identity, Vector3.one * s)));
                     flowers++;
                 }
-                else if (grass < 200)
+                else if (grass < maxGrass)
                 {
+                    if (smooth)
+                    {
+                        float ts = 0.8f + (float)rng.NextDouble() * 0.6f;
+                        garden.Add((tuftModel, Matrix4x4.TRS(p, Quaternion.Euler(0f, (float)rng.NextDouble() * 360f, 0f), new Vector3(ts, ts * (0.8f + (float)rng.NextDouble() * 0.5f), ts))));
+                        grass++;
+                        continue;
+                    }
                     for (int k = 0; k < 3; k++)
                     {
                         float a = k / 3f * Mathf.PI * 2f + (float)rng.NextDouble();
@@ -1095,6 +1116,7 @@ namespace LittleBuildersWorld.EditorTools
                 go.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
                 Static(go);
             }
+            if (smooth) Emit("Garden", garden, BlenderModels.GroupMaterial("Garden"));
             for (int i = 0; i < petalCols.Length; i++) Emit("Petals" + i, petals[i], A.Colour("Petal" + i, petalCols[i], 0.2f));
             Emit("Centres", centres, A.Colour("FlowerYellow", "#FFE066"));
             Emit("Grass", tufts, A.Colour("GrassTuft", "#5DBB4C", 0.1f));

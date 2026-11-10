@@ -349,6 +349,8 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Pond()
         {
             GameObject r = Root("Pond");
+            if (!Model(r, "Pond", "Garden"))
+            {
             A.Part("Bed", r.transform, A.Disc(5.2f, 0.06f, 0.02f, 32), A.Colour("PondBed", "#4FA3C7", 0.5f), new Vector3(0f, 0.01f, 0f), null, new Vector3(1f, 1f, 0.75f));
             A.Part("Water", r.transform, A.Disc(4.9f, 0.08f, 0.02f, 32), A.Colour("Water", "#5FC9F8", 0.8f), new Vector3(0f, 0.03f, 0f), null, new Vector3(1f, 1f, 0.75f));
             var rng = new System.Random(11);
@@ -378,6 +380,7 @@ namespace LittleBuildersWorld.EditorTools
                 foreach (float x in new[] { -0.11f, 0.11f })
                     A.Part("Eye", d, A.Sphere(0.04f * s), A.Ink, new Vector3(x * s, 0.64f * s, 0.5f * s));
             }
+            }
             var col = r.AddComponent<CapsuleCollider>();
             col.center = new Vector3(0f, 1f, 0f);
             col.radius = 4.6f;
@@ -388,10 +391,13 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Fountain()
         {
             GameObject r = Root("Fountain");
-            A.Part("Basin", r.transform, A.Disc(2.2f, 0.7f, 0.25f, 28), A.Concrete, Vector3.zero);
-            A.Part("Water", r.transform, A.Disc(1.9f, 0.1f, 0.05f, 28), A.Colour("Water", "#5FC9F8", 0.8f), new Vector3(0f, 0.62f, 0f));
-            A.Part("Column", r.transform, A.Disc(0.3f, 1.6f, 0.1f, 14), A.Concrete, Vector3.zero);
-            A.Part("Top", r.transform, A.Dome(0.9f, 0.5f), A.Colour("Water", "#5FC9F8", 0.8f), new Vector3(0f, 1.6f, 0f));
+            if (!Model(r, "Fountain", "Garden"))
+            {
+                A.Part("Basin", r.transform, A.Disc(2.2f, 0.7f, 0.25f, 28), A.Concrete, Vector3.zero);
+                A.Part("Water", r.transform, A.Disc(1.9f, 0.1f, 0.05f, 28), A.Colour("Water", "#5FC9F8", 0.8f), new Vector3(0f, 0.62f, 0f));
+                A.Part("Column", r.transform, A.Disc(0.3f, 1.6f, 0.1f, 14), A.Concrete, Vector3.zero);
+                A.Part("Top", r.transform, A.Dome(0.9f, 0.5f), A.Colour("Water", "#5FC9F8", 0.8f), new Vector3(0f, 1.6f, 0f));
+            }
             BoxCol(r, new Vector3(0f, 1.5f, 0f), new Vector3(4.4f, 3f, 4.4f));
             return r;
         }
@@ -493,6 +499,7 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Person(string name, string hatOrHair, string shirt, float scale, bool hardHat, string trousers = "#3D5A80")
         {
             GameObject r = Root(name);
+            if (Model(r, name, "People")) return r;
             Transform b = A.Pivot("Body", r.transform, Vector3.zero);
             b.localScale = Vector3.one * scale;
             Material shirtMat = A.Colour("Shirt_" + shirt.TrimStart('#'), shirt);
@@ -545,6 +552,7 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Sandpit()
         {
             GameObject r = Root("Sandpit");
+            if (Model(r, "Sandpit", "Play")) return r;
             foreach (var (pos, size) in new[] { (new Vector3(0f, 0.2f, 2f), new Vector3(5.2f, 0.4f, 0.3f)), (new Vector3(0f, 0.2f, -2f), new Vector3(5.2f, 0.4f, 0.3f)),
                          (new Vector3(2.5f, 0.2f, 0f), new Vector3(0.3f, 0.4f, 4.3f)), (new Vector3(-2.5f, 0.2f, 0f), new Vector3(0.3f, 0.4f, 4.3f)) })
                 A.Part("Board", r.transform, A.Box(size.x, size.y, size.z, 0.06f), A.Wood, pos);
@@ -559,6 +567,7 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Slide()
         {
             GameObject r = Root("Slide");
+            if (Model(r, "Slide", "Play")) return r;
             Material post = A.Colour("PlayBlue", "#1982C4", 0.4f);
             Material yellow = A.Colour("PlayYellow", "#FFC93C", 0.4f);
             foreach (float x in new[] { -0.7f, 0.7f })
@@ -583,6 +592,7 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Swings()
         {
             GameObject r = Root("Swings");
+            if (Model(r, "Swings", "Play")) return r;
             Material frame = A.Colour("PlayGreen", "#6BCB77", 0.4f);
             A.Part("TopBar", r.transform, A.Box(5.2f, 0.16f, 0.16f, 0.06f), frame, new Vector3(0f, 2.7f, 0f));
             foreach (float x in new[] { -2.4f, 2.4f })
@@ -602,6 +612,7 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject ClimbingFrame()
         {
             GameObject r = Root("ClimbingFrame");
+            if (Model(r, "ClimbingFrame", "Play")) return r;
             string[] cols = { "#FF595E", "#FFC93C", "#1982C4" };
             foreach (float x in new[] { -1.2f, 1.2f })
             foreach (float z in new[] { -1.2f, 1.2f })
@@ -626,6 +637,7 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Roundabout()
         {
             GameObject r = Root("Roundabout");
+            if (Model(r, "Roundabout", "Play")) return r;
             A.Part("Base", r.transform, A.Disc(0.4f, 0.3f, 0.05f, 16), A.DarkSteel, Vector3.zero);
             Transform spin = A.Pivot("Spin", r.transform, new Vector3(0f, 0.3f, 0f));
             A.Part("Plate", spin, A.Disc(1.6f, 0.18f, 0.05f, 28), A.Colour("PlayYellow", "#FFC93C", 0.4f), Vector3.zero);
@@ -643,6 +655,7 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Bench()
         {
             GameObject r = Root("Bench");
+            if (Model(r, "Bench", "Garden")) return r;
             A.Part("Seat", r.transform, A.Box(2f, 0.1f, 0.5f, 0.03f), A.Wood, new Vector3(0f, 0.5f, 0f));
             A.Part("Back", r.transform, A.Box(2f, 0.45f, 0.08f, 0.03f), A.Wood, new Vector3(0f, 0.85f, -0.25f));
             foreach (float x in new[] { -0.85f, 0.85f })

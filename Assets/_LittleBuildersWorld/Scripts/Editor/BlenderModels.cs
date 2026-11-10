@@ -65,6 +65,18 @@ namespace LittleBuildersWorld.EditorTools
             return Load($"{PropModelFolder}/{prop}.bytes", prop, root, mats);
         }
 
+        /// <summary>The single mesh of a one-piece prop (meadow tufts and flowers), for combining hundreds into one mesh.</summary>
+        public static Mesh PropMesh(string prop, string group)
+        {
+            if (!HasProp(prop, group)) return null;
+            var temp = new GameObject("temp_" + prop);
+            BuildProp(prop, group, temp.transform);
+            MeshFilter mf = temp.GetComponentInChildren<MeshFilter>();
+            Mesh mesh = mf != null ? mf.sharedMesh : null;
+            Object.DestroyImmediate(temp);
+            return mesh;
+        }
+
         public static Material GroupMaterial(string group)
         {
             Texture2D tex = Texture($"{PropTextureFolder}/T_Env{group}.png", group == "Buildings" ? 2048 : 1024);

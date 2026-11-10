@@ -11,7 +11,8 @@ import bmesh
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import lbw_blender as L  # noqa: E402
-from lbw_blender import Vector, rbox, cyl, lathe, sphere, blob, rock, unity_matrix, instance  # noqa: E402
+from lbw_blender import Vector, rbox, cyl, lathe, sphere, blob, rock, unity_matrix, instance, sweep, circle, tube_arc  # noqa: E402
+from mathutils import Matrix  # noqa: E402
 
 PROP_DIR = L.REPO + "/Assets/_LittleBuildersWorld/Art/Models/Props"
 PROP_TEX = L.REPO + "/Assets/_LittleBuildersWorld/Art/Textures/Props"
@@ -457,30 +458,614 @@ def buildings(m):
     return models
 
 
+# ================================================================================================= shared bits
+def rod(name, r, p0, p1, segs=10):
+    """Round bar between two Unity points (no rotation maths: legs, rails, ropes, rungs)."""
+    d = Vector(p1) - Vector(p0)
+    ax = min(((1, 0, 0), (0, 1, 0), (0, 0, 1)), key=lambda a: abs(d.normalized().dot(Vector(a))))
+    return sweep(name, [p0, p1], circle(r, segs), ref=ax)
+
+
+def squash(obj, sx=1.0, sy=1.0, sz=1.0):
+    """Scales a placed part about its own origin along Unity axes."""
+    obj.matrix_world = obj.matrix_world @ Matrix.Diagonal((sx, sz, sy, 1.0))
+    return obj
+
+
+def rrect(w, h, r, n=3):
+    """Rounded rectangle profile (closed), w along a, h along b."""
+    pts = []
+    for cx, cy, a0 in ((w / 2 - r, h / 2 - r, 0), (-w / 2 + r, h / 2 - r, 90), (-w / 2 + r, -h / 2 + r, 180), (w / 2 - r, -h / 2 + r, 270)):
+        for i in range(n + 1):
+            a = math.radians(a0 + 90 * i / n)
+            pts.append((cx + math.cos(a) * r, cy + math.sin(a) * r))
+    return pts
+
+
+def pennant(name, origin, length, height, wave=0.05, thick=0.012):
+    """Waving triangular flag pointing +X from `origin` (its pole edge)."""
+    ox, oy, oz = origin
+    path = [(ox + length * t, oy, oz + wave * math.sin(t * 7.0)) for t in (i / 8 for i in range(9))]
+    return sweep(name, path, rrect(thick * 2, height, thick * 0.9, 1), ref=(0, 0, 1), taper=lambda t: (1.0, max(0.06, 1.0 - t)))
+
+
+def flower_disc(name, radius, center, lobes=5, segs=20, cup=0.03, thick=0.02):
+    """Flat flower head: lobed petals (top + bottom fan), slightly cupped."""
+    bm = bmesh.new()
+    top_c = bm.verts.new(Vector((0, 0, thick)))
+    bot_c = bm.verts.new(Vector((0, 0, 0)))
+    top, bot = [], []
+    for i in range(segs):
+        a = 2 * math.pi * i / segs
+        r = radius * (0.5 + 0.5 * abs(math.cos(lobes * a / 2)))
+        z = cup * (r / radius) ** 2
+        top.append(bm.verts.new(Vector((math.cos(a) * r, math.sin(a) * r, z + thick))))
+        bot.append(bm.verts.new(Vector((math.cos(a) * r, math.sin(a) * r, z))))
+    for i in range(segs):
+        j = (i + 1) % segs
+        bm.faces.new((top_c, top[i], top[j]))
+        bm.faces.new((bot_c, bot[j], bot[i]))
+        bm.faces.new((top[i], bot[i], bot[j], top[j]))
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    obj = L._link(name, bm)
+    L._bake_modifiers(obj, None, weighted=False)
+    return L._place(obj, center)
+
+
+def yaw_pt(x, z, yaw):
+    a = math.radians(yaw)
+    return x * math.cos(a) + z * math.sin(a), -x * math.sin(a) + z * math.cos(a)
+
+
+# ================================================================================================= PLAY (playground)
+def play(m):
+    k = {
+        "wood": m.get("PlayWood", rough=0.7, kind="wood", a="#C98B5A", b="#E2AE78", scale=3.0),
+        "blue": m.get("PlayBlue", "#1982C4", rough=0.35),
+        "red": m.get("PlayRed", "#FF595E", rough=0.35),
+        "yellow": m.get("PlayYellow", "#FFC93C", rough=0.35),
+        "green": m.get("PlayGreen", "#6BCB77", rough=0.35),
+        "purple": m.get("PlayPurple", "#8E7DBE", rough=0.35),
+        "orange": m.get("PlayOrange", "#FF9F1C", rough=0.35),
+        "steel": m.get("PlaySteel", "#B8C2CC", rough=0.3),
+        "dark": m.get("PlayDark", "#596270", rough=0.45),
+        "rubber": m.get("PlayRubber", "#3A3945", rough=0.7),
+        "sand": m.get("PlaySand", "#F6D98B", rough=0.95, kind="plain"),
+        "sand2": m.get("PlaySandDark", "#E9C46A", rough=0.95, kind="plain"),
+        "white": m.get("PlayWhite", "#FFFFFF", rough=0.4),
+        "slide": m.get("SlideBed", "#FF595E", rough=0.15, kind="hbands", a="#F04A50", b="#FF6A6F", scale=1.2),
+    }
+    models = []
+
+    # Sandpit: log-edged box, corner seats, lumpy sand, a castle with a flag, bucket and spade.
+    md = L.Model("Sandpit", (0 * SPACING, 0, 0))
+    o = lambda x, y, z: at(md, x, y, z)  # noqa: E731
+    bucket = md.node("Bucket", "Body", (1.1, 0.25, -0.6))
+    for pos, size in (((0, 0.2, 2.0), (5.2, 0.4, 0.3)), ((0, 0.2, -2.0), (5.2, 0.4, 0.3)), ((2.5, 0.2, 0), (0.3, 0.4, 4.3)), ((-2.5, 0.2, 0), (0.3, 0.4, 4.3))):
+        md.add(rbox("Board", size, o(*pos), 0.1, 3), "Body", "Trim", k["wood"])
+    for sx in (-1, 1):
+        for sz in (-1, 1):
+            md.add(rbox("Seat", (0.75, 0.08, 0.75), o(sx * 2.32, 0.43, sz * 1.82), 0.03, 2, euler=(0, 45, 0)), "Body", "Trim", k["wood"])
+    md.add(rbox("Sand", (4.8, 0.24, 3.8), o(0, 0.13, 0), 0.08, 2), "Body", "Trim", k["sand"])
+    for i, (x, z, r) in enumerate(((-1.4, -1.0, 0.7), (1.6, 0.9, 0.6), (0.2, 1.3, 0.45))):
+        md.add(rock(f"Heap{i}", r, o(x, 0.24, z), (1.3, 0.28, 1.0), 2, 0.2, seed=60 + i), "Body", "Trim", k["sand2"])
+    md.add(cyl("Tower", 0.3, 0.45, o(-1.0, 0.45, 0.4), "y", 16, 0.03), "Body", "Trim", k["sand2"])
+    md.add(cyl("Tower2", 0.2, 0.3, o(-0.45, 0.38, 0.55), "y", 14, 0.03), "Body", "Trim", k["sand2"])
+    for i in range(4):
+        a = math.radians(45 + i * 90)
+        md.add(rbox("Merlon", (0.13, 0.12, 0.13), o(-1.0 + math.cos(a) * 0.22, 0.73, 0.4 + math.sin(a) * 0.22), 0.02, 1), "Body", "Trim", k["sand2"])
+    md.add(rod("FlagStick", 0.015, o(-1.0, 0.65, 0.4), o(-1.0, 1.1, 0.4), 6), "Body", "Trim", k["white"])
+    md.add(pennant("Flag", o(-1.0, 1.0, 0.4), 0.28, 0.18, 0.02), "Body", "Trim", k["red"])
+    B = lambda x, y, z: md.at(bucket, x, y, z)  # noqa: E731
+    md.add(lathe("Pail", [(0, 0), (0.2, 0), (0.26, 0.38), (0.24, 0.38), (0.18, 0.04), (0, 0.04)], B(0, -0.13, 0), "y", 18), bucket, "Trim", k["red"])
+    md.add(tube_arc("Handle", 0.25, 0.015, B(0, 0.25, 0), 0, 180, 14, 6), bucket, "Trim", k["yellow"])
+    md.add(rbox("SpadeBlade", (0.22, 0.03, 0.26), o(0.35, 0.29, -1.15), 0.03, 2, euler=(0, 30, 0)), "Body", "Trim", k["blue"])
+    md.add(rod("SpadeHandle", 0.025, o(0.42, 0.29, -1.02), o(0.6, 0.3, -0.7), 8), "Body", "Trim", k["yellow"])
+    models.append(md)
+
+    # Slide: tower with a pointed roof, curved chute to +X, ladder up the -X side.
+    md = L.Model("Slide", (1 * SPACING, 0, 0))
+    o = lambda x, y, z: at(md, x, y, z)  # noqa: E731
+    for x in (-0.7, 0.7):
+        for z in (-0.7, 0.7):
+            md.add(cyl("Post", 0.08, 2.75, o(x, 1.375, z), "y", 12, 0.03), "Body", "Trim", k["blue"])
+            md.add(sphere("Cap", 0.1, o(x, 2.78, z), segs=12, rings=8), "Body", "Trim", k["yellow"])
+    md.add(rbox("Deck", (1.7, 0.14, 1.7), o(0, 2.0, 0), 0.04, 2), "Body", "Trim", k["wood"])
+    for s in (-1, 1):
+        md.add(rbox("Panel", (1.3, 0.5, 0.05), o(0, 2.35, s * 0.72), 0.04, 2), "Body", "Trim", k["yellow"])
+        md.add(tube_arc("Porthole", 0.13, 0.025, o(0, 2.37, s * 0.75), 0, 360, 18, 6), "Body", "Trim", k["blue"])
+        md.add(rod("Rail", 0.04, o(-0.7, 2.62, s * 0.7), o(0.7, 2.62, s * 0.7)), "Body", "Trim", k["blue"])
+    md.add(lathe("Roof", [(0, 1.0), (0.12, 0.96), (0.95, 0.16), (1.12, 0.02), (1.1, -0.04), (0, -0.04)], o(0, 2.8, 0), "y", 24), "Body", "Trim", k["red"])
+    md.add(sphere("Finial", 0.11, o(0, 3.85, 0), segs=12, rings=8), "Body", "Trim", k["yellow"])
+
+    def chute_y(t):
+        e = t * t * (3 - 2 * t)
+        return 0.32 + 1.75 * (1 - e)
+    path = [o(0.8 + 4.1 * t, chute_y(t), 0) for t in (i / 24 for i in range(25))]
+    bed = [(-0.42, 0.32), (-0.42, 0.1), (-0.39, 0.03), (-0.32, 0.0), (0.32, 0.0), (0.39, 0.03), (0.42, 0.1), (0.42, 0.32),
+           (0.48, 0.32), (0.48, 0.06), (0.43, -0.03), (0.35, -0.06), (-0.35, -0.06), (-0.43, -0.03), (-0.48, 0.06), (-0.48, 0.32)]
+    md.add(sweep("Chute", path, bed, ref=(0, 0, 1)), "Body", "Trim", k["slide"])
+    for s in (-1, 1):
+        md.add(sweep("ChuteRail", path, circle(0.05, 10, s * 0.45, 0.34), ref=(0, 0, 1)), "Body", "Trim", k["yellow"])
+    for x, t in ((2.9, 0.512), (4.5, 0.9)):
+        y = chute_y(t) - 0.06
+        for s in (-1, 1):
+            md.add(rod("Leg", 0.05, o(x, 0, s * 0.38), o(x, y, s * 0.38), 8), "Body", "Trim", k["blue"])
+    for s in (-1, 1):
+        md.add(rod("LadderRail", 0.045, o(-1.72, 0, s * 0.42), o(-0.82, 2.3, s * 0.42), 10), "Body", "Trim", k["blue"])
+    for i in range(5):
+        t = (i + 0.6) / 5.6
+        x, y = -1.72 + 0.9 * t, 2.3 * t
+        md.add(rod("Rung", 0.035, o(x, y, -0.42), o(x, y, 0.42), 8), "Body", "Trim", k["yellow"])
+    models.append(md)
+
+    # Swings: green A-frame, two swings with ropes and curved rubber seats ("SwingPivot0/1" sway).
+    md = L.Model("Swings", (2 * SPACING, 0, 0))
+    o = lambda x, y, z: at(md, x, y, z)  # noqa: E731
+    md.add(rod("TopBar", 0.085, o(-2.6, 2.72, 0), o(2.6, 2.72, 0), 14), "Body", "Trim", k["green"])
+    for x in (-2.6, 2.6):
+        md.add(sphere("End", 0.11, o(x, 2.72, 0), segs=12, rings=8), "Body", "Trim", k["yellow"])
+    for x in (-2.45, 2.45):
+        for s in (-1, 1):
+            md.add(rod("Leg", 0.07, o(x, 2.72, 0), o(x, 0.02, s * 0.95), 12), "Body", "Trim", k["green"])
+            md.add(cyl("Foot", 0.14, 0.08, o(x, 0.04, s * 0.95), "y", 12, 0.02), "Body", "Trim", k["dark"])
+        md.add(rod("Brace", 0.04, o(x, 0.9, -0.64), o(x, 0.9, 0.64), 8), "Body", "Trim", k["green"])
+    seats = (k["red"], k["yellow"])
+    for i in range(2):
+        pv = md.node(f"SwingPivot{i}", "Body", (-1.1 + i * 2.2, 2.62, 0))
+        P = lambda x, y, z: md.at(pv, x, y, z)  # noqa: E731
+        for x in (-0.35, 0.35):
+            md.add(tube_arc("Hook", 0.1, 0.02, P(x, 0.1, 0), -40, 220, 12, 6, euler=(0, 90, 0)), pv, "Trim", k["steel"])
+            md.add(rod("Rope", 0.022, P(x, 0.02, 0), P(x, -1.88, 0), 6), pv, "Trim", k["steel"])
+        seat_path = [P(-0.45 + 0.9 * t, -1.88 - 0.07 * (1 - (2 * t - 1) ** 2), 0) for t in (j / 10 for j in range(11))]
+        md.add(sweep("Seat", seat_path, rrect(0.4, 0.07, 0.03, 2), ref=(0, 0, 1)), pv, "Trim", seats[i])
+    models.append(md)
+
+    # Climbing frame: purple posts with ball caps, three levels of bars, wooden deck with a top rail, waving flag.
+    md = L.Model("ClimbingFrame", (3 * SPACING, 0, 0))
+    o = lambda x, y, z: at(md, x, y, z)  # noqa: E731
+    flag = md.node("Flag", "Body", (1.1, 3.45, 1.1))
+    for x in (-1.2, 1.2):
+        for z in (-1.2, 1.2):
+            md.add(cyl("Post", 0.09, 3.1, o(x, 1.55, z), "y", 12, 0.03), "Body", "Trim", k["purple"])
+            md.add(sphere("Cap", 0.13, o(x, 3.12, z), segs=12, rings=8), "Body", "Trim", k["yellow"])
+    bars = (k["red"], k["yellow"], k["blue"])
+    for level, y in enumerate((0.6, 1.3, 2.0)):
+        for s in (-1.2, 1.2):
+            md.add(rod("BarX", 0.05, o(-1.2, y, s), o(1.2, y, s), 10), "Body", "Trim", bars[level])
+            md.add(rod("BarZ", 0.05, o(s, y, -1.2), o(s, y, 1.2), 10), "Body", "Trim", bars[level])
+    md.add(rbox("Deck", (2.5, 0.14, 2.5), o(0, 2.45, 0), 0.04, 2), "Body", "Trim", k["wood"])
+    for s in (-1.2, 1.2):
+        md.add(rod("TopRail", 0.045, o(-1.2, 2.95, s), o(1.2, 2.95, s), 10), "Body", "Trim", k["green"])
+    md.add(rod("TopRailZ", 0.045, o(-1.2, 2.95, -1.2), o(-1.2, 2.95, 1.2), 10), "Body", "Trim", k["green"])
+    md.add(rod("FlagPole", 0.03, o(1.1, 2.5, 1.1), o(1.1, 3.75, 1.1), 8), "Body", "Trim", k["white"])
+    md.add(sphere("PoleTop", 0.06, o(1.1, 3.78, 1.1), segs=10, rings=6), "Body", "Trim", k["yellow"])
+    md.add(pennant("Cloth", md.at(flag, 0.03, 0.0, 0), 0.7, 0.5, 0.05), flag, "Trim", k["red"])
+    models.append(md)
+
+    # Roundabout: four coloured quarters, a hub and four curved handle bars ("Spin" turns).
+    md = L.Model("Roundabout", (4 * SPACING, 0, 0))
+    o = lambda x, y, z: at(md, x, y, z)  # noqa: E731
+    spin = md.node("Spin", "Body", (0, 0.3, 0))
+    S = lambda x, y, z: md.at(spin, x, y, z)  # noqa: E731
+    md.add(lathe("Base", [(0, 0), (0.5, 0), (0.46, 0.08), (0.26, 0.14), (0.22, 0.3), (0, 0.3)], o(0, 0, 0), "y", 18), "Body", "Trim", k["dark"])
+    quarters = (k["yellow"], k["red"], k["blue"], k["green"])
+    for q in range(4):
+        md.add(lathe("Quarter", [(0, 0), (1.55, 0), (1.62, 0.05), (1.62, 0.13), (1.55, 0.18), (0, 0.18)], S(0, 0, 0), "y", 48,
+                     angle=90.0, start=q * 90.0), spin, "Trim", quarters[q])
+    md.add(lathe("Hub", [(0, 0.18), (0.42, 0.18), (0.36, 0.28), (0, 0.3)], S(0, 0, 0), "y", 20), spin, "Trim", k["orange"])
+    md.add(rod("Pole", 0.06, S(0, 0.25, 0), S(0, 1.02, 0), 10), spin, "Trim", k["steel"])
+    md.add(sphere("PoleTop", 0.1, S(0, 1.05, 0), segs=12, rings=8), spin, "Trim", k["red"])
+    for q in range(4):
+        a = math.radians(q * 90 + 45)
+        ca, sa = math.cos(a), math.sin(a)
+        pts = []
+        for i in range(11):
+            t = i / 10
+            d = 0.1 + 1.2 * t
+            pts.append(S(ca * d, 0.95 - 0.78 * t ** 1.6, sa * d))
+        md.add(sweep("Handle", pts, circle(0.04, 8), ref=(-sa, 0, ca)), spin, "Trim", k["steel"])
+    models.append(md)
+    return models
+
+
+# ================================================================================================= GARDEN
+def garden(m):
+    k = {
+        "stone": m.get("GardenStone", rough=0.8, kind="rock", a="#B5AEA4", b="#D6CFC4", scale=4.0, hexstr="#D6CFC4"),
+        "water": m.get("Water", "#5FC9F8", rough=0.08, kind="rings", a="#4DB8EC", b="#7DD6FF", scale=3.0),
+        "jet": m.get("WaterJet", "#BDEBFF", rough=0.05, kind="plain"),
+        "white": m.get("Foam", "#FFFFFF", rough=0.3),
+        "wood": m.get("BenchWood", rough=0.7, kind="wood", a="#B07A48", b="#D09A64", scale=3.0),
+        "iron": m.get("BenchIron", "#2E6B4F", rough=0.4),
+        "pebble": m.get("PondStone", "#9DC46A", rough=0.8, kind="rock", a="#8B8984", b="#B9B5AE", scale=3.0),
+        "bank": m.get("PondBank", "#C9A877", rough=0.9, kind="plain"),
+        "pad": m.get("LilyPad", "#4CB050", rough=0.4, kind="plain"),
+        "lily": m.get("Lily", "#FF8FC7", rough=0.5),
+        "yellow": m.get("Yellow", "#FFE066", rough=0.5),
+        "reed": m.get("Reed", "#5DAA4A", rough=0.7),
+        "cattail": m.get("Cattail", "#7A4E32", rough=0.8),
+        "duck": m.get("Duck", "#FFD447", rough=0.4),
+        "beak": m.get("Beak", "#FF9F1C", rough=0.35),
+        "ink": m.get("Ink", "#2B2D42", rough=0.2),
+        "grass": m.get("Tuft", "#7CCB5E", rough=0.8, kind="foliage", a="#4FA845", b="#9BDD78", scale=(0.0, 0.45)),
+    }
+    models = []
+
+    # Fountain: stone basin with rippling water, pedestal and bowl, eight arcing streams and a jet on top.
+    md = L.Model("Fountain", (0 * SPACING, 0, 0))
+    o = lambda x, y, z: at(md, x, y, z)  # noqa: E731
+    md.add(lathe("Basin", [(0, 0), (2.25, 0), (2.3, 0.05), (2.3, 0.55), (2.36, 0.6), (2.36, 0.72), (2.26, 0.79), (2.02, 0.79),
+                           (1.95, 0.72), (1.95, 0.2), (0, 0.2)], o(0, 0, 0), "y", 40), "Body", "Trim", k["stone"])
+    md.add(cyl("Water", 1.97, 0.06, o(0, 0.58, 0), "y", 40, 0.0), "Body", "Trim", k["water"])
+    md.add(lathe("Pedestal", [(0, 0.5), (0.48, 0.5), (0.48, 0.62), (0.32, 0.76), (0.24, 1.0), (0.3, 1.22), (0.22, 1.4), (0, 1.4)],
+                 o(0, 0, 0), "y", 24), "Body", "Trim", k["stone"])
+    md.add(lathe("Bowl", [(0, 1.34), (0.3, 1.36), (0.75, 1.48), (0.93, 1.62), (0.96, 1.7), (0.88, 1.71), (0.72, 1.6), (0, 1.57)],
+                 o(0, 0, 0), "y", 32), "Body", "Trim", k["stone"])
+    md.add(cyl("BowlWater", 0.84, 0.04, o(0, 1.63, 0), "y", 32, 0.0), "Body", "Trim", k["water"])
+    md.add(lathe("Spout", [(0, 1.6), (0.16, 1.6), (0.1, 1.75), (0.12, 1.85), (0, 1.88)], o(0, 0, 0), "y", 16), "Body", "Trim", k["stone"])
+    md.add(lathe("Jet", [(0, 1.84), (0.07, 1.9), (0.11, 2.1), (0.09, 2.35), (0.04, 2.5), (0, 2.53)], o(0, 0, 0), "y", 14), "Body", "Trim", k["jet"])
+    md.add(lathe("JetCrown", [(0.02, 2.45), (0.16, 2.46), (0.28, 2.36), (0.34, 2.2), (0.3, 2.2), (0.24, 2.32), (0.14, 2.4), (0.02, 2.4)],
+                 o(0, 0, 0), "y", 18), "Body", "Trim", k["jet"])
+    for i in range(8):
+        a = math.radians(i * 45 + 22.5)
+        ca, sa = math.cos(a), math.sin(a)
+        pts = []
+        for j in range(9):
+            t = j / 8
+            d = 0.93 + 0.7 * t
+            pts.append(o(ca * d, 1.7 + 0.18 * t - 1.25 * t * t, sa * d))
+        md.add(sweep("Stream", pts, circle(0.045, 7), ref=(-sa, 0, ca), taper=lambda t: (1.0 + 0.4 * t, 1.0 + 0.4 * t)), "Body", "Trim", k["jet"])
+        md.add(lathe("Splash", [(0.06, 0.6), (0.14, 0.63), (0.18, 0.6), (0.06, 0.6)], o(ca * 1.63, 0.0, sa * 1.63), "y", 10), "Body", "Trim", k["white"])
+    models.append(md)
+
+    # Duck pond: sandy bank, rippling water, stones, reeds with cattails, lily pads and two ducks ("Duck0/1" bob).
+    md = L.Model("Pond", (1 * SPACING, 0, 0))
+    o = lambda x, y, z: at(md, x, y, z)  # noqa: E731
+    md.add(patch("Bank", 0, o(0, 0, 0), sx=1.3, seed=3, rough=0.06, ring=(3.7, 4.55), y=0.02, rim_h=0.05, segs=48), "Body", "Trim", k["bank"])
+    md.add(patch("Water", 3.85, o(0, 0, 0), sx=1.3, seed=3, rough=0.06, y=0.05, segs=48), "Body", "Trim", k["water"])
+    import random
+    rnd = random.Random(11)
+    for i in range(16):
+        a = i / 16 * 2 * math.pi + rnd.uniform(-0.1, 0.1)
+        r = 4.25 + rnd.uniform(-0.15, 0.15)
+        s = rnd.uniform(0.28, 0.45)
+        md.add(rock(f"Stone{i}", s, o(math.cos(a) * r * 1.3, 0.12, math.sin(a) * r), (1.4, 0.65, 1.0), 2, 0.3,
+                    euler=(0, -math.degrees(a), 0), seed=80 + i), "Body", "Trim", k["pebble"])
+    for c, (cx, cz) in enumerate(((-3.9, 1.6), (4.3, -1.2), (-1.2, -3.4))):
+        for j in range(5):
+            x, z = cx + rnd.uniform(-0.35, 0.35), cz + rnd.uniform(-0.3, 0.3)
+            h = rnd.uniform(0.9, 1.45)
+            lean = (rnd.uniform(-0.12, 0.12), rnd.uniform(-0.12, 0.12))
+            md.add(rod("Reed", 0.025, o(x, 0.04, z), o(x + lean[0], h, z + lean[1]), 6), "Body", "Trim", k["reed"])
+            if j % 2 == 0:
+                md.add(sphere("Cattail", 0.055, o(x + lean[0] * 0.9, h - 0.12, z + lean[1] * 0.9), (1, 3.2, 1), 8, 6), "Body", "Trim", k["cattail"])
+        for j in range(3):
+            a = j * 2.1 + c
+            pts = [o(cx + math.cos(a) * 0.5 * t * t, 0.04 + 0.75 * t, cz + math.sin(a) * 0.5 * t * t) for t in (i / 4 for i in range(5))]
+            md.add(sweep("ReedLeaf", pts, [(0.05, 0), (0, 0.01), (-0.05, 0), (0, -0.01)], ref=(-math.sin(a), 0, math.cos(a)),
+                         taper=lambda t: (max(0.1, 1 - t), 1.0)), "Body", "Trim", k["reed"])
+    for i, (x, z, r) in enumerate(((2.2, 1.1, 0.55), (-2.6, -0.8, 0.5), (0.8, -2.0, 0.45), (2.9, -0.4, 0.38))):
+        md.add(lathe("LilyPad", [(0, 0), (r, 0), (r, 0.03), (0, 0.03)], o(x, 0.07, z), "y", 20, angle=320.0, start=i * 70.0), "Body", "Trim", k["pad"])
+        if i < 3:
+            for p in range(6):
+                a = p / 6 * 2 * math.pi
+                md.add(sphere("Petal", 0.07, o(x + 0.12 + math.cos(a) * 0.08, 0.15, z + 0.08 + math.sin(a) * 0.08), (0.8, 0.6, 1.6), 8, 5,
+                              euler=(25, -math.degrees(a) + 90, 0)), "Body", "Trim", k["lily"])
+            md.add(sphere("LilyHeart", 0.05, o(x + 0.12, 0.17, z + 0.08), segs=8, rings=5), "Body", "Trim", k["yellow"])
+    for i, ((nx, ny, nz), yaw, s) in enumerate((((-1.0, 0.12, 0.6), 40.0, 1.0), ((1.2, 0.12, -0.8), 190.0, 0.7))):
+        node = md.node(f"Duck{i}", "Body", (nx, ny, nz))
+
+        def D(x, y, z, node=node, yaw=yaw, s=s):
+            rx, rz = yaw_pt(x * s, z * s, yaw)
+            return md.at(node, rx, y * s, rz)
+        md.add(sphere("Body", 0.4 * s, D(0, 0.2, 0), (1, 0.72, 1.3), 20, 12, euler=(0, yaw, 0)), node, "Trim", k["duck"])
+        md.add(sphere("Tail", 0.16 * s, D(0, 0.36, -0.5), (0.8, 0.8, 1.3), 12, 8, euler=(-30, yaw, 0)), node, "Trim", k["duck"])
+        for sd in (-1, 1):
+            md.add(sphere("Wing", 0.24 * s, D(sd * 0.3, 0.27, -0.06), (0.35, 0.6, 1.1), 12, 8, euler=(-10, yaw, 0)), node, "Trim", k["duck"])
+            md.add(sphere("Eye", 0.045 * s, D(sd * 0.12, 0.66, 0.5), (1, 1.2, 0.7), 10, 6, euler=(0, yaw, 0)), node, "Trim", k["ink"])
+            md.add(sphere("Shine", 0.015 * s, D(sd * 0.12 + 0.012, 0.68, 0.54), segs=6, rings=4), node, "Trim", k["white"])
+        md.add(sphere("Head", 0.25 * s, D(0, 0.6, 0.32), segs=18, rings=12), node, "Trim", k["duck"])
+        md.add(sphere("Beak", 0.11 * s, D(0, 0.55, 0.57), (1.1, 0.42, 1.3), 12, 8, euler=(0, yaw, 0)), node, "Trim", k["beak"])
+    models.append(md)
+
+    # Park bench: wooden slats on green iron sides with arm rests.
+    md = L.Model("Bench", (2 * SPACING, 0, 0))
+    o = lambda x, y, z: at(md, x, y, z)  # noqa: E731
+    for z in (-0.15, 0.0, 0.15):
+        md.add(rbox("Slat", (2.0, 0.06, 0.13), o(0, 0.5, z), 0.025, 2), "Body", "Trim", k["wood"])
+    for y in (0.74, 0.93):
+        md.add(rbox("Back", (2.0, 0.14, 0.05), o(0, y, -0.28 - (y - 0.74) * 0.18), 0.02, 2, euler=(-10, 0, 0)), "Body", "Trim", k["wood"])
+    for x in (-0.86, 0.86):
+        md.add(rod("FrontLeg", 0.04, o(x, 0, 0.2), o(x, 0.68, 0.22), 8), "Body", "Trim", k["iron"])
+        md.add(rod("BackLeg", 0.04, o(x, 0, -0.18), o(x, 1.02, -0.32), 8), "Body", "Trim", k["iron"])
+        md.add(rod("SeatRail", 0.035, o(x, 0.45, -0.22), o(x, 0.45, 0.22), 8), "Body", "Trim", k["iron"])
+        md.add(rbox("Arm", (0.08, 0.05, 0.5), o(x, 0.68, 0.0), 0.02, 2), "Body", "Trim", k["iron"])
+        md.add(sphere("ArmEnd", 0.05, o(x, 0.68, 0.25), segs=10, rings=6), "Body", "Trim", k["iron"])
+    models.append(md)
+
+    # Meadow pieces (combined by the hundred in Unity): a grass tuft and five flower colours.
+    md = L.Model("MeadowTuft", (3 * SPACING, 0, 0))
+    for i in range(4):
+        a = i / 4 * 2 * math.pi + 0.4
+        ca, sa = math.cos(a), math.sin(a)
+        h = 0.36 + 0.12 * ((i * 7) % 3) / 2
+        pts = [at(md, ca * (0.05 + 0.14 * t * t), h * t, sa * (0.05 + 0.14 * t * t)) for t in (0.0, 0.5, 1.0)]
+        md.add(sweep("Blade", pts, [(0.035, 0), (0, 0.01), (-0.035, 0), (0, -0.01)], ref=(-sa, 0, ca),
+                     taper=lambda t: (max(0.12, 1 - 0.9 * t), 1.0)), "Body", "Trim", k["grass"])
+    models.append(md)
+    for i, col in enumerate(("#FF8FC7", "#FFE066", "#FFFFFF", "#B39CFF", "#FF7F6E")):
+        md = L.Model(f"MeadowFlower{i}", ((4 + i) * SPACING, 0, 0))
+        petal = m.get(f"Petal{i}", col, rough=0.5)
+        md.add(flower_disc("Petals", 0.32, at(md, 0, 0.05, 0), 5, 15), "Body", "Trim", petal)
+        md.add(sphere("Centre", 0.085, at(md, 0, 0.09, 0), (1, 0.5, 1), 6, 3), "Body", "Trim", k["yellow"])
+        models.append(md)
+    return models
+
+
+# ================================================================================================= PEOPLE
+PEOPLE = (
+    # name, hair/hat, shirt, trousers, skin, scale, hard hat, hair style
+    ("Foreman", "#FFC93C", "#FF9F1C", "#3D5A80", "#F1C27D", 1.0, True, ""),
+    ("KidA", "#3A2E2A", "#FF595E", "#3D5A80", "#FFD5B0", 0.72, False, "pigtails"),
+    ("KidB", "#8A5A3A", "#4EA8DE", "#3D5A80", "#C68A5C", 0.68, False, "tuft"),
+    ("KidC", "#F4D35E", "#8AC926", "#3D5A80", "#F1C27D", 0.7, False, "ponytail"),
+    ("Resident", "#6B4226", "#219EBC", "#2A9D8F", "#B07A50", 1.0, False, "short"),
+)
+
+
+def people(m):
+    ink = m.get("Ink", "#2B2D42", rough=0.2)
+    white = m.get("White", "#FFFFFF", rough=0.3)
+    cheek = m.get("Cheek", "#FF9AA2", rough=0.6)
+    mouth = m.get("Mouth", "#B5423C", rough=0.4)
+    shoe = m.get("Shoe", "#5A4636", rough=0.6)
+    sole = m.get("Sole", "#3A3945", rough=0.7)
+    stripe = m.get("HiVis", "#FFF2B0", rough=0.3)
+    belt = m.get("Belt", "#6B4A32", rough=0.6)
+    gold = m.get("Gold", "#FFC93C", rough=0.25)
+    models = []
+    for n, (name, top, shirt_hex, trousers_hex, skin_hex, s, hard_hat, style) in enumerate(PEOPLE):
+        md = L.Model(name, (n * SPACING * 0.5, 0, 0))
+        shirt = m.get("Shirt" + name, shirt_hex, rough=0.75)
+        legs = m.get("Trousers" + trousers_hex, trousers_hex, rough=0.8)
+        skin = m.get("Skin" + skin_hex, skin_hex, rough=0.55)
+        nose = m.get("Nose" + skin_hex, L_shade(skin_hex, 0.9), rough=0.55)
+        hair = m.get(("Hat" if hard_hat else "Hair") + name, top, rough=0.3 if hard_hat else 0.6)
+        P = lambda x, y, z: at(md, x * s, y * s, z * s)  # noqa: E731
+        for sd in (-1, 1):
+            md.add(rbox("Shoe", (0.27 * s, 0.15 * s, 0.4 * s), P(sd * 0.14, 0.1, 0.05), 0.07 * s, 3, top=(0.88, 0.85)), "Body", "Trim", shoe)
+            md.add(rbox("Sole", (0.28 * s, 0.05 * s, 0.41 * s), P(sd * 0.14, 0.025, 0.05), 0.02 * s, 2), "Body", "Trim", sole)
+            md.add(cyl("Leg", 0.12 * s, 0.48 * s, P(sd * 0.14, 0.4, 0), "y", 12, 0.03 * s), "Body", "Trim", legs)
+        md.add(rbox("Hips", (0.56 * s, 0.2 * s, 0.36 * s), P(0, 0.64, 0), 0.09 * s, 3), "Body", "Trim", legs)
+        md.add(squash(lathe("Torso", [(0, 0), (0.3 * s, 0), (0.34 * s, 0.08 * s), (0.35 * s, 0.3 * s), (0.33 * s, 0.5 * s), (0.26 * s, 0.64 * s),
+                                      (0.12 * s, 0.7 * s), (0, 0.7 * s)], P(0, 0.62, 0), "y", 24), sz=0.7), "Body", "Trim", shirt)
+        md.add(cyl("Neck", 0.1 * s, 0.14 * s, P(0, 1.36, 0), "y", 12, 0.0), "Body", "Trim", skin)
+        if hard_hat:
+            for y, r in ((0.27, 0.35), (0.45, 0.335)):
+                md.add(squash(lathe("Stripe", [(r * s - 0.02 * s, -0.03 * s), (r * s + 0.008 * s, -0.03 * s), (r * s + 0.012 * s, 0),
+                                               (r * s + 0.008 * s, 0.03 * s), (r * s - 0.02 * s, 0.03 * s)], P(0, 0.62 + y, 0), "y", 24), sz=0.7),
+                       "Body", "Trim", stripe)
+            md.add(squash(lathe("Belt", [(0.3 * s, -0.035 * s), (0.312 * s, -0.035 * s), (0.315 * s, 0), (0.312 * s, 0.035 * s), (0.3 * s, 0.035 * s)],
+                                P(0, 0.66, 0), "y", 24), sz=0.72), "Body", "Trim", belt)
+            md.add(rbox("Buckle", (0.1 * s, 0.07 * s, 0.03 * s), P(0, 0.66, 0.225), 0.01 * s, 1), "Body", "Trim", gold)
+        else:
+            md.add(squash(lathe("Band", [(0.33 * s, -0.035 * s), (0.352 * s, -0.035 * s), (0.355 * s, 0), (0.352 * s, 0.035 * s), (0.33 * s, 0.035 * s)],
+                                P(0, 0.62 + 0.3, 0), "y", 24), sz=0.7), "Body", "Trim", white)
+            md.add(sphere("Badge", 0.07 * s, P(0.12, 1.08, 0.235), (1, 1, 0.35), 12, 8), "Body", "Trim", white if name != "KidC" else gold)
+        # Head and friendly face.
+        md.add(sphere("Head", 0.4 * s, P(0, 1.7, 0), segs=28, rings=16), "Body", "Trim", skin)
+        for sd in (-1, 1):
+            md.add(sphere("Ear", 0.09 * s, P(sd * 0.39, 1.68, 0), (0.6, 1, 1), 10, 6), "Body", "Trim", skin)
+            md.add(sphere("Eye", 0.075 * s, P(sd * 0.14, 1.75, 0.345), (1, 1.3, 0.55), 14, 8), "Body", "Trim", ink)
+            md.add(sphere("Shine", 0.026 * s, P(sd * 0.14 + 0.025, 1.79, 0.39), segs=8, rings=5), "Body", "Trim", white)
+            md.add(tube_arc("Brow", 0.08 * s, 0.017 * s, P(sd * 0.14, 1.8, 0.35), 60, 120, 8, 5), "Body", "Trim", ink if hard_hat else hair)
+            md.add(sphere("Cheek", 0.075 * s, P(sd * 0.24, 1.6, 0.31), (1, 0.6, 0.4), 12, 6), "Body", "Trim", cheek)
+        md.add(sphere("Nose", 0.06 * s, P(0, 1.65, 0.39), segs=10, rings=6), "Body", "Trim", nose)
+        md.add(tube_arc("Smile", 0.1 * s, 0.024 * s, P(0, 1.6, 0.36), 205, 335, 12, 6, euler=(-12, 0, 0)), "Body", "Trim", mouth)
+        if hard_hat:
+            md.add(lathe("Hat", [(0, 0.36 * s), (0.16 * s, 0.35 * s), (0.31 * s, 0.28 * s), (0.42 * s, 0.12 * s), (0.44 * s, 0.02 * s),
+                                 (0.56 * s, -0.01 * s), (0.57 * s, -0.05 * s), (0.42 * s, -0.04 * s), (0, -0.04 * s)], P(0, 1.82, 0), "y", 28),
+                   "Body", "Trim", hair)
+            md.add(tube_arc("Ridge", 0.36 * s, 0.035 * s, P(0, 1.82, 0), 25, 155, 14, 6, euler=(0, 90, 0)), "Body", "Trim", hair)
+            md.add(sphere("HatBadge", 0.07 * s, P(0, 2.0, 0.35), (1, 1, 0.4), 12, 8), "Body", "Trim", white)
+        else:
+            md.add(lathe("Hair", [(0, 0.37 * s), (0.2 * s, 0.34 * s), (0.36 * s, 0.22 * s), (0.44 * s, 0.05 * s), (0.45 * s, 0), (0, 0)],
+                         P(0, 1.73, -0.04), "y", 28, euler=(-18, 0, 0)), "Body", "Trim", hair)
+            for x, y, z in ((-0.17, 1.95, 0.3), (0.0, 1.98, 0.33), (0.17, 1.95, 0.3)):
+                md.add(sphere("Fringe", 0.11 * s, P(x, y, z), (1.3, 0.7, 0.8), 12, 8), "Body", "Trim", hair)
+            if style == "pigtails":
+                for sd in (-1, 1):
+                    md.add(sphere("Pigtail", 0.15 * s, P(sd * 0.45, 1.72, -0.12), (0.9, 1.25, 0.9), 12, 8), "Body", "Trim", hair)
+                    md.add(cyl("Tie", 0.065 * s, 0.06 * s, P(sd * 0.45, 1.9, -0.12), "y", 10, 0.0), "Body", "Trim", shirt)
+            elif style == "tuft":
+                md.add(sphere("Tuft", 0.14 * s, P(-0.04, 2.13, -0.02), (1, 1.1, 1), 12, 8), "Body", "Trim", hair)
+                md.add(sphere("Tuft2", 0.09 * s, P(0.1, 2.22, -0.08), segs=10, rings=6), "Body", "Trim", hair)
+            elif style == "ponytail":
+                md.add(sphere("Ponytail", 0.16 * s, P(0, 1.78, -0.48), (0.85, 1.4, 0.9), 12, 8, euler=(25, 0, 0)), "Body", "Trim", hair)
+                md.add(cyl("Tie", 0.08 * s, 0.05 * s, P(0, 1.98, -0.42), "z", 10, 0.0), "Body", "Trim", shirt)
+            else:
+                md.add(sphere("Part", 0.16 * s, P(0.2, 1.98, 0.12), (1.2, 0.8, 1.2), 12, 8), "Body", "Trim", hair)
+        # Arms: the left hangs down, the right ("WaveArm") points up and waves.
+        md.add(sphere("ShoulderL", 0.12 * s, P(-0.4, 1.22, 0), segs=12, rings=8), "Body", "Trim", shirt)
+        md.add(rod("SleeveL", 0.1 * s, P(-0.41, 1.22, 0), P(-0.45, 0.96, 0), 12), "Body", "Trim", shirt)
+        md.add(rod("ForearmL", 0.075 * s, P(-0.45, 0.98, 0), P(-0.49, 0.7, 0), 10), "Body", "Trim", skin)
+        md.add(sphere("HandL", 0.11 * s, P(-0.5, 0.64, 0), segs=12, rings=8), "Body", "Trim", skin)
+        arm = md.node("WaveArm", "Body", (0.42 * s, 1.25 * s, 0))
+        A = lambda x, y, z: md.at(arm, x * s, y * s, z * s)  # noqa: E731
+        md.add(sphere("Shoulder", 0.12 * s, A(0, 0, 0), segs=12, rings=8), arm, "Trim", shirt)
+        md.add(rod("Sleeve", 0.1 * s, A(0, 0, 0), A(0, 0.3, 0), 12), arm, "Trim", shirt)
+        md.add(rod("Forearm", 0.075 * s, A(0, 0.28, 0), A(0, 0.56, 0), 10), arm, "Trim", skin)
+        md.add(sphere("Hand", 0.11 * s, A(0, 0.63, 0), segs=12, rings=8), arm, "Trim", skin)
+        md.add(sphere("Thumb", 0.045 * s, A(-0.09, 0.6, 0.04), segs=8, rings=5), arm, "Trim", skin)
+        models.append(md)
+    return models
+
+
+# ================================================================================================= GROUND (tileable textures)
+GROUND_DIR = L.REPO + "/Assets/_LittleBuildersWorld/Art/Textures/Ground"
+GROUND = {
+    # name: (tile metres, base a, base b, light speck, dark speck, patch scale /m, speck scale /m)
+    "Grass": (8.0, "#86CD67", "#9ADB7A", "#B4E894", "#6FBA55", 0.4, 10.0),
+    "Dirt": (6.0, "#B07A4E", "#C08A5C", "#D6A57A", "#8E5F3B", 0.6, 5.0),
+    "Sand": (6.0, "#DFC690", "#EAD6A6", "#F6E7C2", "#C8AD78", 0.5, 12.0),
+}
+
+
+def ground_textures(size=512):
+    """Seamless ground tiles: 4D noise sampled on a torus, so the edges wrap exactly."""
+    L.reset()
+    scene = bpy_scene()
+    os.makedirs(GROUND_DIR, exist_ok=True)
+    bm = bmesh.new()
+    uv = bm.loops.layers.uv.new("UV")
+    v = [bm.verts.new(Vector(p)) for p in ((0, 0, 0), (1, 0, 0), (1, 1, 0), (0, 1, 0))]
+    f = bm.faces.new(v)
+    for loop, c in zip(f.loops, ((0, 0), (1, 0), (1, 1), (0, 1))):
+        loop[uv].uv = c
+    plane = L._link("Tile", bm)
+    for name, (tile, a, b, light, dark, patch_s, speck_s) in GROUND.items():
+        mat = L.bpy.data.materials.new("G" + name)
+        nodes, links = mat.node_tree.nodes, mat.node_tree.links
+        bsdf = nodes["Principled BSDF"]
+        R = tile / (2 * math.pi)
+        tc = nodes.new("ShaderNodeTexCoord")
+        sep = nodes.new("ShaderNodeSeparateXYZ")
+        links.new(tc.outputs["UV"], sep.inputs[0])
+
+        def trig(src, op):
+            mul = nodes.new("ShaderNodeMath")
+            mul.operation = "MULTIPLY"
+            mul.inputs[1].default_value = 2 * math.pi
+            links.new(src, mul.inputs[0])
+            t = nodes.new("ShaderNodeMath")
+            t.operation = op
+            links.new(mul.outputs[0], t.inputs[0])
+            sc = nodes.new("ShaderNodeMath")
+            sc.operation = "MULTIPLY"
+            sc.inputs[1].default_value = R
+            links.new(t.outputs[0], sc.inputs[0])
+            return sc.outputs[0]
+        comb = nodes.new("ShaderNodeCombineXYZ")
+        links.new(trig(sep.outputs["X"], "COSINE"), comb.inputs[0])
+        links.new(trig(sep.outputs["X"], "SINE"), comb.inputs[1])
+        links.new(trig(sep.outputs["Y"], "COSINE"), comb.inputs[2])
+        w = trig(sep.outputs["Y"], "SINE")
+
+        def noise(scale, detail, kind="noise", seed=0.0):
+            if kind == "noise":
+                n = nodes.new("ShaderNodeTexNoise")
+                n.noise_dimensions = "4D"
+                n.inputs["Detail"].default_value = detail
+                n.inputs["Roughness"].default_value = 0.55
+            else:
+                n = nodes.new("ShaderNodeTexVoronoi")
+                n.voronoi_dimensions = "4D"
+                n.inputs["Randomness"].default_value = 1.0
+            n.inputs["Scale"].default_value = scale
+            add = nodes.new("ShaderNodeMath")
+            add.operation = "ADD"
+            add.inputs[1].default_value = seed
+            links.new(w, add.inputs[0])
+            links.new(comb.outputs[0], n.inputs["Vector"])
+            links.new(add.outputs[0], n.inputs["W"])
+            return n
+
+        def ramp(fac, stops):
+            r = nodes.new("ShaderNodeValToRGB")
+            els = r.color_ramp.elements
+            while len(els) < len(stops):
+                els.new(0.5)
+            for el, (pos, col) in zip(els, stops):
+                el.position = pos
+                el.color = col
+            links.new(fac, r.inputs["Fac"])
+            return r.outputs["Color"]
+
+        def mix(c0, c1, fac):
+            mx = nodes.new("ShaderNodeMix")
+            mx.data_type = "RGBA"
+            links.new(fac, mx.inputs["Factor"])
+            links.new(c0, mx.inputs[6])
+            links.new(c1, mx.inputs[7])
+            return mx.outputs[2]
+        base = ramp(noise(patch_s, 4.0).outputs["Fac"], [(0.3, L.lin(a)), (0.7, L.lin(b))])
+        fine = ramp(noise(patch_s * 6, 3.0, seed=3.0).outputs["Fac"], [(0.3, (0.93, 0.93, 0.93, 1)), (0.7, (1.06, 1.06, 1.06, 1))])
+        mul = nodes.new("ShaderNodeMix")
+        mul.data_type = "RGBA"
+        mul.blend_type = "MULTIPLY"
+        mul.inputs["Factor"].default_value = 1.0
+        links.new(base, mul.inputs[6])
+        links.new(fine, mul.inputs[7])
+        col = mul.outputs[2]
+        vl = noise(speck_s, 0, "voronoi", 7.0)
+        light_mask = ramp(vl.outputs["Distance"], [(0.3, (1, 1, 1, 1)), (0.37, (0, 0, 0, 1))])
+        lm = nodes.new("ShaderNodeMath")
+        lm.operation = "MULTIPLY"
+        lm.inputs[1].default_value = 0.8
+        links.new(light_mask, lm.inputs[0])
+        col = mix(col, ramp(vl.outputs["Color"], [(0.0, L.lin(light)), (1.0, L.lin(b))]), lm.outputs[0])
+        vd = noise(speck_s * 0.7, 0, "voronoi", 13.0)
+        dark_mask = ramp(vd.outputs["Distance"], [(0.28, (1, 1, 1, 1)), (0.34, (0, 0, 0, 1))])
+        dm = nodes.new("ShaderNodeMath")
+        dm.operation = "MULTIPLY"
+        dm.inputs[1].default_value = 0.7
+        links.new(dark_mask, dm.inputs[0])
+        col = mix(col, ramp(vd.outputs["Color"], [(0.0, L.lin(dark)), (1.0, L.lin(a))]), dm.outputs[0])
+        links.new(col, bsdf.inputs["Emission Color"])
+        bsdf.inputs["Emission Strength"].default_value = 1.0
+        bsdf.inputs["Base Color"].default_value = (0, 0, 0, 1)
+        plane.data.materials.clear()
+        plane.data.materials.append(mat)
+        im = L.bpy.data.images.new("T_" + name, size, size, alpha=False)
+        L._set_bake_target([mat], im)
+        scene.render.engine = "CYCLES"
+        scene.cycles.device = "CPU"
+        scene.cycles.samples = 16
+        L.bpy.ops.object.select_all(action="DESELECT")
+        plane.select_set(True)
+        L.bpy.context.view_layer.objects.active = plane
+        L.bpy.ops.object.bake(type="EMIT", margin=0, use_clear=True)
+        im.filepath_raw = f"{GROUND_DIR}/T_{name}.png"
+        im.file_format = "PNG"
+        im.save()
+        print(f"[LBW] ground texture {name}: {size}px, tiles every {tile} m -> {im.filepath_raw}")
+
+
+def bpy_scene():
+    return L.bpy.context.scene
+
+
 def L_shade(hexstr, f):
     h = hexstr.lstrip("#")
     return "#" + "".join(f"{max(0, min(255, int(int(h[i:i + 2], 16) * f))):02X}" for i in (0, 2, 4))
 
 
-GROUPS = {"Nature": nature, "Street": street, "Buildings": buildings}
+GROUPS = {"Nature": nature, "Street": street, "Buildings": buildings, "Play": play, "Garden": garden, "People": people}
 
 
 def main():
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     want_preview = "--preview" in argv
-    names = [a for a in argv if not a.startswith("--")] or list(GROUPS)
+    names = [a for a in argv if not a.startswith("--")] or list(GROUPS) + ["Ground"]
     for name in names:
+        if name == "Ground":
+            ground_textures()
+            continue
         L.reset()
         models = GROUPS[name](L.Mats())
         g = L.Group("Env" + name, models)
-        g.ao_distance = 1.5
+        g.ao_distance = 0.6 if name == "People" else 1.5
         tex, em = L.bake(g, 2048 if name == "Buildings" else 1024, 48, PROP_TEX)
         total = sum(L.export(md, PROP_DIR) for md in models)
         print(f"[LBW] group {name}: {len(models)} props, {total} vertices")
         if want_preview:
-            n = len(models)
-            L.preview(g, tex, em, {}, f"{L.LOG_DIR}/Env{name}_preview",
-                      [((i * SPACING + 4.0, 3.5, 8.0), (i * SPACING, 1.8, 0.0)) for i in range(n)])
+            views = []
+            for md in models:
+                c = md.world["Body"]
+                r = 3.4 if name == "People" else 7.0
+                views.append(((c.x + r * 0.45, c.y + r * 0.5, c.z + r), (c.x, c.y + (0.9 if name == "People" else 1.2), c.z)))
+            L.preview(g, tex, em, {}, f"{L.LOG_DIR}/Env{name}_preview", views)
     print("[LBW] build_env done")
 
 

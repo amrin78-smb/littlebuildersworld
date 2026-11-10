@@ -794,7 +794,7 @@ def preview(model, tex, em, tints, path, views):
     sun_data.angle = math.radians(8)
     sun = bpy.data.objects.new("Sun", sun_data)
     scene.collection.objects.link(sun)
-    sun.rotation_euler = (math.radians(40), 0, math.radians(35))
+    sun.rotation_euler = (math.radians(-40), 0, math.radians(35))  # lights the +Z (front) faces
     scene.world.node_tree.nodes["Background"].inputs["Color"].default_value = lin("#BFE6FF")
     scene.world.node_tree.nodes["Background"].inputs["Strength"].default_value = 0.9
     cam_data = bpy.data.cameras.new("Cam")
@@ -916,3 +916,41 @@ def rock(name, radius, center, scale=(1, 1, 1), subdiv=2, noise=0.25, euler=None
     obj = _link(name, bm)
     _bake_modifiers(obj, None, weighted=False)
     return _place(obj, center, euler)
+
+
+def sweep(name, path, profile, ref=(0.0, 0.0, 1.0), taper=None, caps=True):
+    """Closed profile [(a, b)] swept along a Unity-space path. a runs along `ref` (made perpendicular to the path),
+    b along ref x tangent ("up" for a path in a vertical plane with ref across it). taper(t) -> (sa, sb) scales it."""
+    pts = [Vector(p) for p in path]
+    refv = Vector(ref).normalized()
+    bm = bmesh.new()
+    rings = []
+    n = len(pts)
+    for i, p in enumerate(pts):
+        t = (pts[min(n - 1, i + 1)] - pts[max(0, i - 1)]).normalized()
+        side = (refv - t * refv.dot(t)).normalized()
+        up = side.cross(t).normalized()
+        sa, sb = taper(i / (n - 1)) if taper else (1.0, 1.0)
+        ring = []
+        for a, b in profile:
+            q = p + side * (a * sa) + up * (b * sb)
+            ring.append(bm.verts.new(U(q.x, q.y, q.z)))
+        rings.append(ring)
+    m = len(profile)
+    for i in range(n - 1):
+        for k in range(m):
+            bm.faces.new((rings[i][k], rings[i][(k + 1) % m], rings[i + 1][(k + 1) % m], rings[i + 1][k]))
+    if caps:
+        for end in (rings[0], rings[-1]):
+            f = bm.faces.new(end)
+            bmesh.ops.poke(bm, faces=[f])
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=1e-6)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    obj = _link(name, bm)
+    _bake_modifiers(obj, None, weighted=False)
+    obj.matrix_world = Matrix.Identity(4)
+    return obj
+
+
+def circle(radius, segs=10, cx=0.0, cy=0.0):
+    return [(cx + math.cos(2 * math.pi * i / segs) * radius, cy + math.sin(2 * math.pi * i / segs) * radius) for i in range(segs)]
