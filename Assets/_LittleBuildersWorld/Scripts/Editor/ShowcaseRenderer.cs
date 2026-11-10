@@ -97,18 +97,18 @@ namespace LittleBuildersWorld.EditorTools
         private static void RenderVehiclesAndProps()
         {
             Camera cam = StudioScene();
-            // Yaw, pitch: front 3/4, rear (the driving view), side, rear 3/4 from high.
-            var angles = new[] { (215f, 14f), (0f, 18f), (90f, 8f), (140f, 35f) };
+            // Yaw, pitch, framing: front 3/4, rear (the driving view), side, rear 3/4 from high, front close, face close.
+            var angles = new[] { (215f, 14f, 1.05f), (0f, 18f, 1.05f), (90f, 8f, 1.05f), (140f, 35f, 1.05f), (180f, 6f, 0.62f), (205f, 12f, 0.5f) };
             foreach (VehicleType type in new[] { VehicleType.Excavator, VehicleType.DumpTruck, VehicleType.Bulldozer, VehicleType.RoadRoller })
             {
                 GameObject prefab = VehicleBuilder.Load(type);
                 if (prefab == null) continue;
                 GameObject go = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
                 var cells = new List<Texture2D>();
-                foreach (var (yaw, pitch) in angles)
+                foreach (var (yaw, pitch, margin) in angles)
                 {
                     go.transform.rotation = Quaternion.Euler(0f, yaw, 0f);
-                    Frame(cam, Bounds(go), pitch, 1.05f);
+                    Frame(cam, Bounds(go), pitch, margin);
                     cells.Add(Capture(cam, Cell));
                 }
                 Object.DestroyImmediate(go);

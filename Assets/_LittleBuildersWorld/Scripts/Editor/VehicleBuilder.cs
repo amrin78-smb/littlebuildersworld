@@ -361,17 +361,50 @@ namespace LittleBuildersWorld.EditorTools
 
         private static GameObject Save(GameObject root, VehicleType type) => E.SavePrefab(root, $"{Folder}/{type}.prefab");
 
+        /// <summary>
+        /// Smooth textured model from Tools/blender/build_models.sh (same pivots as the procedural build): wires
+        /// wheels/sprockets ("Wheel*"), steering ("SteerPivot*"), the beacon, paintable parts and track belts.
+        /// </summary>
+        private static BlenderModels.Result UseModel(Ctx c, string name, string primaryHex, string secondaryHex)
+        {
+            BlenderModels.Result model = BlenderModels.Build(name, c.Body, primaryHex, secondaryHex);
+            foreach (var kv in model.Nodes)
+            {
+                if (kv.Key.StartsWith("SteerPivot")) c.SteerWheels.Add(kv.Value);
+                else if (kv.Key.StartsWith("Wheel")) c.Wheels.Add(kv.Value);
+            }
+            if (model.Nodes.TryGetValue("Beacon", out Transform beacon)) c.Beacon = beacon;
+            c.Primary.AddRange(model.Primary);
+            c.Secondary.AddRange(model.Secondary);
+            c.Tracks.AddRange(model.Tracks);
+            return model;
+        }
+
         // ------------------------------------------------------------------ Excavator
         private static GameObject Excavator(VehicleProfile profile)
         {
             Ctx c = Begin("Excavator", "#FFC93C", "#4B4E6D");
+            Transform cab, boom, stick, bucket;
+            if (BlenderModels.Has("Excavator"))
+            {
+                var m = UseModel(c, "Excavator", "#FFC93C", "#4B4E6D").Nodes;
+                (cab, boom, stick, bucket) = (m["Cab"], m["Boom"], m["Stick"], m["Bucket"]);
+            }
+            else ProceduralExcavator(c, out cab, out boom, out stick, out bucket);
+            GameObject soil = A.Part("Soil", bucket, A.Dome(0.42f, 0.38f), A.Soil, new Vector3(0f, 0.12f, 0.38f), null, new Vector3(1f, 1f, 0.85f));
+            Transform tip = A.Pivot("Tip", bucket, new Vector3(0f, -0.4f, 0.8f));
+            return FinishExcavator(c, profile, cab, boom, stick, bucket, soil, tip);
+        }
+
+        private static void ProceduralExcavator(Ctx c, out Transform cab, out Transform boom, out Transform stick, out Transform bucket)
+        {
             Transform b = c.Body;
             Track(c, -1.0f, 3.6f, 0.85f, 0.7f);
             Track(c, 1.0f, 3.6f, 0.85f, 0.7f);
             A.Part("Undercarriage", b, A.Box(1.4f, 0.45f, 2.4f, 0.15f), A.DarkSteel, new Vector3(0f, 0.75f, 0f));
             A.Part("Turntable", b, A.Disc(0.85f, 0.18f, 0.05f), A.DarkSteel, new Vector3(0f, 0.95f, 0f));
 
-            Transform cab = A.Pivot("Cab", b, new Vector3(0f, 1.0f, 0f));
+            cab = A.Pivot("Cab", b, new Vector3(0f, 1.0f, 0f));
             c.P("Deck", cab, A.Box(2.5f, 0.85f, 2.7f, 0.25f), new Vector3(0f, 0.45f, -0.1f));
             c.S("Counterweight", cab, A.Box(2.4f, 0.8f, 0.75f, 0.3f), new Vector3(0f, 0.55f, -1.35f));
             c.P("Cabin", cab, A.Box(1.15f, 1.4f, 1.3f, 0.28f), new Vector3(-0.6f, 1.55f, 0.45f));
@@ -396,24 +429,25 @@ namespace LittleBuildersWorld.EditorTools
             HazardStripes(cab, new Vector3(0f, 0.56f, -1.74f), 0.9f, 0.18f, 6);
             RearLights(cab, new Vector3(0f, 0.56f, -1.74f), 0.8f, 0.8f);
 
-            Transform boom = A.Pivot("Boom", cab, new Vector3(0.45f, 1.15f, 0.95f));
+            boom = A.Pivot("Boom", cab, new Vector3(0.45f, 1.15f, 0.95f));
             c.P("BoomArm", boom, A.Box(0.42f, 0.5f, 3.3f, 0.18f), new Vector3(0f, 0f, 1.55f));
             A.Part("BoomRam", boom, A.Box(0.18f, 0.18f, 1.7f, 0.08f), A.Steel, new Vector3(0f, -0.36f, 0.95f));
             A.Part("BoomRamBody", boom, A.Box(0.26f, 0.26f, 0.9f, 0.1f), A.DarkSteel, new Vector3(0f, -0.36f, 0.45f));
             A.Part("StickRam", boom, A.Box(0.16f, 0.16f, 1.3f, 0.07f), A.Steel, new Vector3(0f, 0.38f, 2.35f));
             A.Part("StickRamBody", boom, A.Box(0.24f, 0.24f, 0.8f, 0.09f), A.DarkSteel, new Vector3(0f, 0.38f, 1.75f));
-            Transform stick = A.Pivot("Stick", boom, new Vector3(0f, 0f, 3.1f));
+            stick = A.Pivot("Stick", boom, new Vector3(0f, 0f, 3.1f));
             c.S("StickArm", stick, A.Box(0.34f, 0.42f, 2.3f, 0.14f), new Vector3(0f, 0f, 1.05f));
             A.Part("BucketRam", stick, A.Box(0.14f, 0.14f, 1.1f, 0.06f), A.Steel, new Vector3(0f, 0.3f, 1.25f));
             A.Part("Joint", stick, A.Wheel(0.26f, 0.5f, 0.06f), A.DarkSteel, Vector3.zero);
-            Transform bucket = A.Pivot("Bucket", stick, new Vector3(0f, 0f, 2.15f));
+            bucket = A.Pivot("Bucket", stick, new Vector3(0f, 0f, 2.15f));
             A.Part("Joint", bucket, A.Wheel(0.2f, 0.46f, 0.05f), A.DarkSteel, Vector3.zero);
             A.Part("Shell", bucket, A.Box(1.0f, 0.62f, 0.8f, 0.18f), A.DarkSteel, new Vector3(0f, -0.15f, 0.38f));
             for (int i = 0; i < 4; i++)
                 A.Part("Tooth", bucket, A.Box(0.13f, 0.12f, 0.24f, 0.04f), A.Steel, new Vector3(-0.36f + i * 0.24f, -0.42f, 0.78f));
-            GameObject soil = A.Part("Soil", bucket, A.Dome(0.42f, 0.38f), A.Soil, new Vector3(0f, 0.12f, 0.38f), null, new Vector3(1f, 1f, 0.85f));
-            Transform tip = A.Pivot("Tip", bucket, new Vector3(0f, -0.4f, 0.8f));
+        }
 
+        private static GameObject FinishExcavator(Ctx c, VehicleProfile profile, Transform cab, Transform boom, Transform stick, Transform bucket, GameObject soil, Transform tip)
+        {
             // Bake the folded rest pose (same as ExcavatorArm.Rest) so the prefab looks right everywhere.
             boom.localRotation = Quaternion.Euler(-35f, 0f, 0f);
             stick.localRotation = Quaternion.Euler(100f, 0f, 0f);
@@ -437,6 +471,15 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject DumpTruck(VehicleProfile profile)
         {
             Ctx c = Begin("DumpTruck", "#FF595E", "#1982C4");
+            Transform b = c.Body;
+            Transform bed;
+            if (BlenderModels.Has("DumpTruck")) bed = UseModel(c, "DumpTruck", "#FF595E", "#1982C4").Nodes["BedPivot"];
+            else bed = ProceduralDumpTruck(c);
+            return FinishDumpTruck(c, profile, bed);
+        }
+
+        private static Transform ProceduralDumpTruck(Ctx c)
+        {
             Transform b = c.Body;
             A.Part("Chassis", b, A.Box(1.5f, 0.5f, 5.0f, 0.15f), A.DarkSteel, new Vector3(0f, 0.95f, -0.2f));
             foreach (float x in new[] { -1.05f, 1.05f })
@@ -493,7 +536,11 @@ namespace LittleBuildersWorld.EditorTools
             HazardStripes(bed, new Vector3(0f, 0.5f, -0.005f), 2.0f, 0.22f, 10);
             foreach (float x in new[] { -1.05f, 1.05f })
                 A.Part("Hinge", bed, A.Wheel(0.08f, 0.22f, 0.03f), A.DarkSteel, new Vector3(x, 0.82f, 0.02f));
+            return bed;
+        }
 
+        private static GameObject FinishDumpTruck(Ctx c, VehicleProfile profile, Transform bed)
+        {
             GameObject soilLoad = A.Part("Load_Soil", bed, A.Dome(1.0f, 0.85f), A.Soil, new Vector3(0f, 0.18f, 1.75f), null, new Vector3(1.05f, 1f, 1.55f));
             GameObject gravelLoad = A.Part("Load_Gravel", bed, A.Dome(1.0f, 0.75f), A.Gravel, new Vector3(0f, 0.18f, 1.75f), null, new Vector3(1.05f, 1f, 1.55f));
             Transform bricks = A.Pivot("Load_Bricks", bed, new Vector3(0f, 0.18f, 1.75f));
@@ -533,6 +580,15 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Bulldozer(VehicleProfile profile)
         {
             Ctx c = Begin("Bulldozer", "#FF9F1C", "#5B5F73");
+            if (BlenderModels.Has("Bulldozer")) UseModel(c, "Bulldozer", "#FF9F1C", "#5B5F73");
+            else ProceduralBulldozer(c);
+            Colliders(c, new Vector3(0f, 1.35f, 0.3f), new Vector3(2.9f, 1.4f, 4.6f), 1.3f, 0.55f);
+            GameObject root = Finish(c, profile, 5f, DebrisPusher.Mode.CarryWithBlade, 1.65f, 2.7f, 1.9f);
+            return Save(root, VehicleType.Bulldozer);
+        }
+
+        private static void ProceduralBulldozer(Ctx c)
+        {
             Transform b = c.Body;
             Track(c, -1.05f, 3.6f, 0.9f, 0.75f);
             Track(c, 1.05f, 3.6f, 0.9f, 0.75f);
@@ -574,15 +630,21 @@ namespace LittleBuildersWorld.EditorTools
                 A.Part("BladeRam", b, A.Box(0.14f, 0.14f, 1.2f, 0.05f), A.Steel, new Vector3(x * 0.5f, 1.45f, 1.85f), new Vector3(20f, 0f, 0f));
             }
 
-            Colliders(c, new Vector3(0f, 1.35f, 0.3f), new Vector3(2.9f, 1.4f, 4.6f), 1.3f, 0.55f);
-            GameObject root = Finish(c, profile, 5f, DebrisPusher.Mode.CarryWithBlade, 1.65f, 2.7f, 1.9f);
-            return Save(root, VehicleType.Bulldozer);
         }
 
         // ------------------------------------------------------------------ Road roller
         private static GameObject RoadRoller(VehicleProfile profile)
         {
             Ctx c = Begin("RoadRoller", "#6BCB77", "#FFD447");
+            if (BlenderModels.Has("RoadRoller")) UseModel(c, "RoadRoller", "#6BCB77", "#FFD447");
+            else ProceduralRoadRoller(c);
+            Colliders(c, new Vector3(0f, 1.4f, 0f), new Vector3(2.45f, 1.4f, 4.6f), 1.6f, 0.6f);
+            GameObject root = Finish(c, profile, 5f, DebrisPusher.Mode.NudgeAside, 1.25f, 2.3f, 2.1f);
+            return Save(root, VehicleType.RoadRoller);
+        }
+
+        private static void ProceduralRoadRoller(Ctx c)
+        {
             Transform b = c.Body;
             SpinWheel(c, b, new Vector3(0f, 0.8f, 1.5f), 0.8f, 2.1f, true, A.Steel);
             Transform steer = c.SteerWheels[0];
@@ -612,9 +674,6 @@ namespace LittleBuildersWorld.EditorTools
             A.Part("Wheel", b, A.Wheel(0.22f, 0.06f, 0.02f), A.Ink, new Vector3(0f, 2.35f, -0.45f), new Vector3(0f, 90f, 60f));
             Beacon(c, b, new Vector3(0f, 3.45f, -0.92f));
 
-            Colliders(c, new Vector3(0f, 1.4f, 0f), new Vector3(2.45f, 1.4f, 4.6f), 1.6f, 0.6f);
-            GameObject root = Finish(c, profile, 5f, DebrisPusher.Mode.NudgeAside, 1.25f, 2.3f, 2.1f);
-            return Save(root, VehicleType.RoadRoller);
         }
     }
 }

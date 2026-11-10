@@ -14,8 +14,8 @@ namespace LittleBuildersWorld.EditorTools
     /// </summary>
     public static class ProjectConfigurator
     {
-        public const string AppVersion = "0.3.0";
-        public const int AppVersionCode = 4;
+        public const string AppVersion = "0.4.0";
+        public const int AppVersionCode = 5;
 
         public const string ApplicationId = "com.studio.littlebuildersworld";
         public const string VulkanFilterPath = E.Root + "/Settings/VulkanDeviceFilters.asset";

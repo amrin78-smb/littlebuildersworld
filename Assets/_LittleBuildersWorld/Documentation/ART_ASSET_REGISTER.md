@@ -6,7 +6,8 @@ No downloaded models, textures, sounds or music. No third-party brands or charac
 
 | Category | Assets | Source | Status |
 |---|---|---|---|
-| Vehicles | `Prefabs/Vehicles/{Excavator,DumpTruck,Bulldozer,RoadRoller}.prefab` | `VehicleBuilder` — procedural rounded meshes, custom crawler-track mesh | **Custom procedural models** (stylised, final for first release; can be swapped for artist models without code changes — gameplay only needs the named pivots) |
+| Vehicles | `Prefabs/Vehicles/{Excavator,DumpTruck,Bulldozer,RoadRoller}.prefab` | `VehicleBuilder` — gameplay wiring; visuals from the Blender models below (procedural rounded meshes as fallback) | Custom, original |
+| Smooth vehicle models (Blender) | `Art/Models/Vehicles/{Excavator,DumpTruck,Bulldozer,RoadRoller}.bytes` (mesh packs), `Art/Textures/Vehicles/T_<Vehicle>{,_E}.png` (baked colour × soft shadow, gloss in alpha; glow mask) | **Original, scripted in Blender** (`Tools/blender/build_models.sh` → `build_models.py`, run offline/headless with the owner's Blender 5.2); read by `BlenderModels`. No downloaded meshes or textures. | All four vehicles; the procedural build in `VehicleBuilder` remains as a fallback |
 | Vehicle portraits, app icon | `Art/UI/Portraits/*.png`, `Art/UI/AppIcon.png` | `PortraitRenderer` renders the prefabs | Generated |
 | Environment props | `Prefabs/Environment/*` (trees, bush, fence, flag, lamp, cloud, shed, water tower, windmill, 4 town houses, hopper, brick pallet, skip, barrier, sign post, soil mounds, resident, foreman, three children, bunting, balloon arch, fountain, rainbow arch, parts pallet; playground: sandpit, slide, swings, climbing frame, roundabout, bench; duck pond) | `PropBuilder` | Custom procedural, toy style |
 | Debris | `Prefabs/Activities/Debris{Rock,Log,Crate,Cone}.prefab` | `PropBuilder` | Custom procedural |

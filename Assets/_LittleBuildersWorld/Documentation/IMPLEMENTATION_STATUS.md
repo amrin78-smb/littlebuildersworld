@@ -77,6 +77,17 @@ reset every tick); rocks could be pushed through a fence and lost (now they retu
 ride up onto fences (colliders are now taller invisible walls); a white panel covered the truck bed; crawler-track
 faces were inside out; a null reference during scene unload.
 
+## Blender vehicle models (v0.4.0)
+
+* New offline pipeline: `Tools/blender/build_models.sh` (Blender 5.2, headless, ~10 min per vehicle) scripts a
+  smooth model, bakes one texture per vehicle (colour × soft shadow, gloss, glow mask) and writes a mesh pack;
+  `BlenderModels` (Setup) turns it into meshes under the same pivots, so wheels, steering, the excavator arm, the
+  tipping bed, tracks (scrolling belt, spinning sprockets/road wheels), beacon and paint work unchanged.
+* All four vehicles converted: bigger faces with brows and smiles, rounded cabs, curved bulldozer blade, chunky
+  treaded tyres, chrome bumpers/rams, glowing lights. Town scene ~504k vertices (v0.3.0: ~490k).
+* Checked with `Tools/showcase.sh` renders (now incl. front and face close-ups). EditMode 34/34, PlayMode 6/6.
+* Not yet measured on the Redmi A3 (frame rate, memory with four 1024² vehicle textures).
+
 ## Art pass (v0.3.0)
 
 All still generated in code (no third-party art). Checked with `Tools/showcase.sh` renders and in-game screenshots.

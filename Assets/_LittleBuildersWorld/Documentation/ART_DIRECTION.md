@@ -4,6 +4,16 @@ Toy-like, rounded, bright but balanced. Everything is built from rounded boxes, 
 (`MeshFactory`), shaded with URP Simple Lit and a small shared palette. No textures except subtle speckle tiles
 (grass, sand, dirt), the road, and the crawler-track cleats.
 
+**Smooth vehicle models (Blender).** `Tools/blender/build_models.sh` builds vehicles in Blender from a script
+(bevelled, smooth-shaded parts, chunky treaded tyres, bigger faces with brows and a smile), unwraps them into one
+atlas and bakes a 1024² texture: base colour × soft ambient occlusion, gloss in alpha, plus a glow mask for lights.
+Paintable parts are baked near-white and tinted by the material colour, so the paint shop still works. The mesh
+pack keeps the same named pivots (wheels, steer pivots, bed, beacon), so gameplay code is unchanged; without the
+pack the procedural vehicle is used. Crawler belts keep their own UVs so the tread still scrolls; sprockets and
+road wheels spin. Vertices: dump truck ~33k (six wheels), excavator ~16k, bulldozer ~15k, roller ~16k; 3 materials
++ the track material each, one texture per vehicle. Run Blender, then
+`Tools/setup.sh`.
+
 ## Scale (1 unit = 1 m)
 
 | Thing | Size |
