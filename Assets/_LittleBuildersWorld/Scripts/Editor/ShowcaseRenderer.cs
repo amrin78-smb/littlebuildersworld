@@ -147,6 +147,9 @@ namespace LittleBuildersWorld.EditorTools
                 cam.CopyFrom(main);
                 main.enabled = false;
             }
+            // Start-of-game look: the roadworks' finished road lines are hidden until that project is done.
+            GameObject freshLines = GameObject.Find("FreshLines");
+            if (freshLines != null) freshLines.SetActive(false);
             int renderers = 0, staticR = 0;
             long verts = 0;
             var byMesh = new Dictionary<string, (int count, long verts)>();

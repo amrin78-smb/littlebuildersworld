@@ -4,6 +4,14 @@ Toy-like, rounded, bright but balanced. Everything is built from rounded boxes, 
 (`MeshFactory`), shaded with URP Simple Lit and a small shared palette. No textures except subtle speckle tiles
 (grass, sand, dirt), the road, and the crawler-track cleats.
 
+**Smooth environment (Blender).** `Tools/blender/build_env.sh [Nature Street Buildings]` builds the props the
+same way, but every prop in a group shares ONE baked atlas (Nature 1024², Street 1024², Buildings 2048²), so in
+Unity each group is a single material and static batching merges them across the town (renderers 2555 → ~1000).
+Puffy metaball tree canopies with apples, scalloped pines, mossy rocks, white wooden fences, lantern lamps, striped
+barriers, sided houses with shingle roofs, shutters and flower boxes, a lattice-sail windmill, a braced water tower,
+dirt-crater potholes with broken asphalt (then gravel, then fresh tarmac). Roads get red/white kerbs
+(`TownBuilder.Kerbs`, visual only). Town ~511k vertices.
+
 **Smooth vehicle models (Blender).** `Tools/blender/build_models.sh` builds vehicles in Blender from a script
 (bevelled, smooth-shaded parts, chunky treaded tyres, bigger faces with brows and a smile), unwraps them into one
 atlas and bakes a 1024² texture: base colour × soft ambient occlusion, gloss in alpha, plus a glow mask for lights.

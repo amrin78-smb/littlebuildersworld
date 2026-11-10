@@ -43,12 +43,43 @@ namespace LittleBuildersWorld.EditorTools
                 ["Track"] = A.Track // crawler belt: own UVs, the tread texture scrolls (VehicleVisuals)
             };
 
+            Result result = Load($"{ModelFolder}/{vehicle}.bytes", vehicle, body, mats);
+            Debug.Log($"[LBW] {vehicle}: Blender model, {result.Vertices} vertices");
+            return result;
+        }
+
+        // ------------------------------------------------------------------ environment props (Tools/blender/build_env.sh)
+        public const string PropModelFolder = E.Root + "/Art/Models/Props";
+        public const string PropTextureFolder = E.Root + "/Art/Textures/Props";
+
+        public static bool HasProp(string prop, string group) =>
+            File.Exists($"{PropModelFolder}/{prop}.bytes") && File.Exists($"{PropTextureFolder}/T_Env{group}.png");
+
+        /// <summary>
+        /// Builds a prop from its mesh pack under <paramref name="root"/> (pack node "Body" = the root). Every prop of a
+        /// group shares one material/texture, so static batching merges them across the whole town.
+        /// </summary>
+        public static Result BuildProp(string prop, string group, Transform root)
+        {
+            var mats = new Dictionary<string, Material> { ["Trim"] = GroupMaterial(group) };
+            return Load($"{PropModelFolder}/{prop}.bytes", prop, root, mats);
+        }
+
+        public static Material GroupMaterial(string group)
+        {
+            Texture2D tex = Texture($"{PropTextureFolder}/T_Env{group}.png", group == "Buildings" ? 2048 : 1024);
+            Texture2D glow = Texture($"{PropTextureFolder}/T_Env{group}_E.png", 256);
+            return MakeMaterial($"Env_{group}", "#FFFFFF", tex, glow);
+        }
+
+        private static Result Load(string path, string prefix, Transform body, Dictionary<string, Material> mats)
+        {
             var result = new Result();
             result.Nodes["Body"] = body;
-            using (var r = new BinaryReader(File.OpenRead($"{ModelFolder}/{vehicle}.bytes")))
+            using (var r = new BinaryReader(File.OpenRead(path)))
             {
                 if (Encoding.ASCII.GetString(r.ReadBytes(4)) != "LBWM" || r.ReadInt32() != 1)
-                    throw new IOException($"[LBW] {vehicle}.bytes is not a version 1 mesh pack");
+                    throw new IOException($"[LBW] {path} is not a version 1 mesh pack");
                 int nodeCount = r.ReadInt32();
                 for (int i = 0; i < nodeCount; i++)
                 {
@@ -77,7 +108,7 @@ namespace LittleBuildersWorld.EditorTools
                     mesh.triangles = tris;
                     mesh.RecalculateBounds();
                     mesh.RecalculateTangents();
-                    mesh = A.SaveMesh($"BM_{vehicle}_{name}", mesh);
+                    mesh = A.SaveMesh($"BM_{prefix}_{name}", mesh);
                     GameObject go = A.Part($"{node}_{slot}", result.Nodes[node], mesh, mats[slot], Vector3.zero);
                     var renderer = go.GetComponent<Renderer>();
                     if (slot == "Primary") result.Primary.Add(renderer);
@@ -86,7 +117,6 @@ namespace LittleBuildersWorld.EditorTools
                     result.Vertices += vc;
                 }
             }
-            Debug.Log($"[LBW] {vehicle}: Blender model, {result.Vertices} vertices");
             return result;
         }
 

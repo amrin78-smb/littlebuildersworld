@@ -43,6 +43,7 @@ namespace LittleBuildersWorld.EditorTools
             Camera cam = MainCamera();
             Ground();
             Roads();
+            Kerbs();
             Transform yardView = Yard(out Dictionary<VehicleType, Vehicle> vehicles, out LoadingBay gravelBay, out TownSession.Decoration[] decorations);
             HousePlot();
             Roadworks();
@@ -349,6 +350,53 @@ namespace LittleBuildersWorld.EditorTools
             Road("SpurSouth", new Vector3(0, 0, -16), new Vector3(0, 0, -55), 9f, A.Road, 0.03f);
             Road("SpurEast", new Vector3(23, 0, 0), new Vector3(55, 0, 0), 9f, A.Road, 0.03f);
             Road("HouseDrive", new Vector3(34, 0, 65), new Vector3(34, 0, 70), 8f, A.RoadPlain, 0.03f);
+        }
+
+        /// <summary>
+        /// Toy-town kerbs: alternating red and white blocks along both edges of every road, combined into two static
+        /// meshes, with gaps where another road, a drive or a corner pad meets the edge. Visual only (no colliders).
+        /// </summary>
+        private static void Kerbs()
+        {
+            const float block = 3f;
+            Mesh mesh = A.Box(0.32f, 0.14f, block - 0.04f, 0.04f); // long axis = Z = along the road
+            var red = new List<(Mesh, Matrix4x4)>();
+            var white = new List<(Mesh, Matrix4x4)>();
+            foreach (var (a, b, w) in s_Roads)
+            {
+                Vector3 d = b - a;
+                float len = d.magnitude;
+                d /= len;
+                Vector3 side = Vector3.Cross(Vector3.up, d);
+                int n = Mathf.FloorToInt(len / block);
+                float start = (len - n * block) * 0.5f + block * 0.5f;
+                for (int i = 0; i < n; i++)
+                    foreach (float sgn in new[] { -1f, 1f })
+                    {
+                        Vector3 p = a + d * (start + i * block) + side * (sgn * (w * 0.5f + 0.16f));
+                        if (NearOtherRoad(p, a, b) || Mathf.Abs(Mathf.Abs(p.x) - 60f) < 8f && Mathf.Abs(Mathf.Abs(p.z) - 60f) < 8f) continue;
+                        (i % 2 == 0 ? red : white).Add((mesh, Matrix4x4.TRS(p + Vector3.up * 0.07f, Quaternion.LookRotation(d), Vector3.one)));
+                    }
+            }
+            Transform roads = Group("Roads");
+            foreach (var (name, list, mat) in new[] { ("KerbRed", red, A.Colour("KerbRed", "#E84A4A", 0.2f)), ("KerbWhite", white, A.Concrete) })
+            {
+                if (list.Count == 0) continue;
+                GameObject k = A.Part(name, roads, A.SaveMesh(name, LittleBuildersWorld.Core.MeshFactory.Combine(name, list.ToArray())), mat, Vector3.zero);
+                k.GetComponent<MeshRenderer>().shadowCastingMode = ShadowCastingMode.Off;
+                Static(k);
+            }
+            Debug.Log($"[LBW] Kerbs: {red.Count + white.Count} blocks");
+        }
+
+        private static bool NearOtherRoad(Vector3 p, Vector3 a, Vector3 b)
+        {
+            foreach (var (a2, b2, w2) in s_Roads)
+            {
+                if (a2 == a && b2 == b) continue;
+                if (DistanceToSegment(p, a2, b2) < w2 * 0.5f + 0.8f) return true;
+            }
+            return false;
         }
 
         // ------------------------------------------------------------------ construction yard
@@ -672,21 +720,32 @@ namespace LittleBuildersWorld.EditorTools
             {
                 Transform p = Group("Patch", roll);
                 p.position = new Vector3(60f, 0f, z);
-                GameObject pothole = A.Part("Pothole", p, A.Disc(2.2f, 0.03f, 0.01f, 20), A.Pothole, new Vector3(0f, 0.05f, 0f), null, new Vector3(1.3f, 1f, 1f));
-                // A real-looking hole: darker middle, broken bits of road around the edge, a few pebbles.
-                A.Part("Deep", pothole.transform, A.Disc(1.3f, 0.03f, 0.01f, 16), A.Colour("PotholeDeep", "#28231F", 0.05f), new Vector3(0.2f, 0.01f, -0.1f));
-                Material chunk = A.Colour("BrokenRoad", "#6E7380", 0.15f);
-                for (int i = 0; i < 9; i++)
+                GameObject pothole, rough, smooth;
+                if (BlenderModels.HasProp("PotholeHole", "Street"))
                 {
-                    float a = i / 9f * Mathf.PI * 2f + z;
-                    A.Part("Chunk", pothole.transform, A.Box(0.55f, 0.1f, 0.35f, 0.04f), chunk, new Vector3(Mathf.Cos(a) * 2.05f, 0.03f, Mathf.Sin(a) * 2.05f), new Vector3(i * 7f, a * Mathf.Rad2Deg * -1f + 90f, i % 2 == 0 ? 6f : -5f));
+                    // Smooth textured stages from Tools/blender/build_env.sh (jagged hole, gravel fill, fresh tarmac).
+                    pothole = PatchStage("Pothole", "PotholeHole", p, z);
+                    rough = PatchStage("Rough", "PotholeRough", p, z);
+                    smooth = PatchStage("Smooth", "PotholeSmooth", p, z);
                 }
-                for (int i = 0; i < 4; i++)
-                    A.Part("Pebble", pothole.transform, A.Sphere(0.12f), A.Gravel, new Vector3(Mathf.Cos(i * 2.1f + z) * 1.0f, 0.04f, Mathf.Sin(i * 2.1f + z) * 0.8f));
-                GameObject rough = A.Part("Rough", p, A.Dome(2.3f, 0.35f), A.Gravel, new Vector3(0f, 0.02f, 0f), null, new Vector3(1.3f, 1f, 1f));
-                for (int i = 0; i < 5; i++)
-                    A.Part("Lump", rough.transform, A.Sphere(0.3f), A.Rock, new Vector3(Mathf.Cos(i * 1.3f) * 1.3f, 0.25f, Mathf.Sin(i * 1.3f) * 1.3f));
-                GameObject smooth = A.Part("Smooth", p, A.Disc(2.4f, 0.03f, 0.01f, 20), A.Tarmac, new Vector3(0f, 0.05f, 0f), null, new Vector3(1.3f, 1f, 1f));
+                else
+                {
+                    pothole = A.Part("Pothole", p, A.Disc(2.2f, 0.03f, 0.01f, 20), A.Pothole, new Vector3(0f, 0.05f, 0f), null, new Vector3(1.3f, 1f, 1f));
+                    // A real-looking hole: darker middle, broken bits of road around the edge, a few pebbles.
+                    A.Part("Deep", pothole.transform, A.Disc(1.3f, 0.03f, 0.01f, 16), A.Colour("PotholeDeep", "#28231F", 0.05f), new Vector3(0.2f, 0.01f, -0.1f));
+                    Material chunk = A.Colour("BrokenRoad", "#6E7380", 0.15f);
+                    for (int i = 0; i < 9; i++)
+                    {
+                        float a = i / 9f * Mathf.PI * 2f + z;
+                        A.Part("Chunk", pothole.transform, A.Box(0.55f, 0.1f, 0.35f, 0.04f), chunk, new Vector3(Mathf.Cos(a) * 2.05f, 0.03f, Mathf.Sin(a) * 2.05f), new Vector3(i * 7f, a * Mathf.Rad2Deg * -1f + 90f, i % 2 == 0 ? 6f : -5f));
+                    }
+                    for (int i = 0; i < 4; i++)
+                        A.Part("Pebble", pothole.transform, A.Sphere(0.12f), A.Gravel, new Vector3(Mathf.Cos(i * 2.1f + z) * 1.0f, 0.04f, Mathf.Sin(i * 2.1f + z) * 0.8f));
+                    rough = A.Part("Rough", p, A.Dome(2.3f, 0.35f), A.Gravel, new Vector3(0f, 0.02f, 0f), null, new Vector3(1.3f, 1f, 1f));
+                    for (int i = 0; i < 5; i++)
+                        A.Part("Lump", rough.transform, A.Sphere(0.3f), A.Rock, new Vector3(Mathf.Cos(i * 1.3f) * 1.3f, 0.25f, Mathf.Sin(i * 1.3f) * 1.3f));
+                    smooth = A.Part("Smooth", p, A.Disc(2.4f, 0.03f, 0.01f, 20), A.Tarmac, new Vector3(0f, 0.05f, 0f), null, new Vector3(1.3f, 1f, 1f));
+                }
                 A.NoShadows(p.gameObject);
                 var rp = p.gameObject.AddComponent<RoughPatch>();
                 E.Set(rp, "m_Pothole", pothole);
@@ -718,6 +777,15 @@ namespace LittleBuildersWorld.EditorTools
                 (new[] { lines }, new[] { barrierN, barrierS })
             });
             s_Keepout.Add((new Vector3(64f, 0f, 0f), 13f));
+        }
+
+        private static GameObject PatchStage(string name, string prop, Transform parent, float seed)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localRotation = Quaternion.Euler(0f, seed * 23f, 0f);
+            BlenderModels.BuildProp(prop, "Street", go.transform);
+            return go;
         }
 
         // ------------------------------------------------------------------ playground (third project, opens with an Area unlock)

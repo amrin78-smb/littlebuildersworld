@@ -77,6 +77,15 @@ reset every tick); rocks could be pushed through a fence and lost (now they retu
 ride up onto fences (colliders are now taller invisible walls); a white panel covered the truck bed; crawler-track
 faces were inside out; a null reference during scene unload.
 
+## Blender environment (v0.5.0)
+
+* `Tools/blender/build_env.sh` (Nature/Street ~5 min, Buildings ~35 min with its 2048² atlas) rebuilds trees, bush,
+  debris, fence, lamp, barrier, sign post, potholes (3 stages), 4 town houses, shed, water tower and windmill as
+  smooth baked models; `PropBuilder`/`TownBuilder` use them when present (same pivots: Sway, Blades; same colliders).
+* Red/white kerbs along all roads. Showcase now hides the end-of-roadworks lines like the game does at start.
+* Town scene: ~1016 mesh renderers (was 2555), ~511k vertices (was ~504k).
+* Not yet measured on the Redmi A3.
+
 ## Blender vehicle models (v0.4.0)
 
 * New offline pipeline: `Tools/blender/build_models.sh` (Blender 5.2, headless, ~10 min per vehicle) scripts a

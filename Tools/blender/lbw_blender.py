@@ -102,6 +102,73 @@ class Mats:
             links.new(ramp.outputs["Color"], mix.inputs[6])
             mix.inputs[7].default_value = (0.92, 0.98, 1.0, 1.0)
             colour_out = mix.outputs[2]
+        elif kind == "foliage":
+            # Light-from-above gradient (object height a..b metres), mottled, with small leafy speckles.
+            colour_out = self._height_ramp(nodes, links, lin(a), lin(b), scale)
+            colour_out = self._speckle(nodes, links, colour_out, lin(hexstr), 9.0, 0.82)
+        elif kind == "wood":
+            colour_out = self._grain(nodes, links, lin(a), lin(b), scale)
+        elif kind == "bark":
+            colour_out = self._bark(nodes, links, lin(a), lin(b), scale)
+        elif kind == "rings":
+            tc = nodes.new("ShaderNodeTexCoord")
+            wave = nodes.new("ShaderNodeTexWave")
+            wave.wave_type = "RINGS"
+            wave.inputs["Scale"].default_value = scale
+            wave.inputs["Distortion"].default_value = 2.0
+            links.new(tc.outputs["Object"], wave.inputs["Vector"])
+            ramp = nodes.new("ShaderNodeValToRGB")
+            ramp.color_ramp.elements[0].color = lin(a)
+            ramp.color_ramp.elements[1].color = lin(b)
+            links.new(wave.outputs["Fac"], ramp.inputs["Fac"])
+            colour_out = ramp.outputs["Color"]
+        elif kind == "bricks":
+            tc = nodes.new("ShaderNodeTexCoord")
+            br = nodes.new("ShaderNodeTexBrick")
+            br.inputs["Color1"].default_value = lin(a)
+            br.inputs["Color2"].default_value = lin(b)
+            br.inputs["Mortar"].default_value = lin("#E8DCCB")
+            br.inputs["Scale"].default_value = scale
+            br.inputs["Mortar Size"].default_value = 0.03
+            br.inputs["Brick Width"].default_value = 0.5
+            br.inputs["Row Height"].default_value = 0.25
+            links.new(tc.outputs["Object"], br.inputs["Vector"])
+            colour_out = br.outputs["Color"]
+        elif kind in ("shingles", "siding"):
+            # Overlapping rows: saw bands (light edge -> darker underside), along local depth (roof) or height (walls).
+            tc = nodes.new("ShaderNodeTexCoord")
+            wave = nodes.new("ShaderNodeTexWave")
+            wave.wave_type = "BANDS"
+            wave.bands_direction = "Y" if kind == "shingles" else "Z"
+            wave.wave_profile = "SAW"
+            wave.inputs["Scale"].default_value = scale
+            wave.inputs["Distortion"].default_value = 0.0
+            links.new(tc.outputs["Object"], wave.inputs["Vector"])
+            ramp = nodes.new("ShaderNodeValToRGB")
+            ramp.color_ramp.elements[0].position = 0.0
+            ramp.color_ramp.elements[0].color = lin(a)
+            ramp.color_ramp.elements[1].position = 0.85
+            ramp.color_ramp.elements[1].color = lin(b)
+            links.new(wave.outputs["Fac"], ramp.inputs["Fac"])
+            colour_out = ramp.outputs["Color"]
+        elif kind == "radial":
+            # Dark centre fading to the edge colour over `scale` metres (pothole insides).
+            tc = nodes.new("ShaderNodeTexCoord")
+            mp = nodes.new("ShaderNodeMapping")
+            mp.inputs["Scale"].default_value = (1.0 / scale, 1.0 / scale, 1.0 / scale)
+            links.new(tc.outputs["Object"], mp.inputs["Vector"])
+            gr = nodes.new("ShaderNodeTexGradient")
+            gr.gradient_type = "SPHERICAL"
+            links.new(mp.outputs["Vector"], gr.inputs["Vector"])
+            ramp = nodes.new("ShaderNodeValToRGB")
+            ramp.color_ramp.elements[0].color = lin(b)
+            ramp.color_ramp.elements[1].position = 0.7
+            ramp.color_ramp.elements[1].color = lin(a)
+            links.new(gr.outputs["Fac"], ramp.inputs["Fac"])
+            colour_out = self._speckle(nodes, links, ramp.outputs["Color"], lin(hexstr), 14.0, 0.8)
+        elif kind == "rock":
+            colour_out = self._mottle(nodes, links, self._shade(lin(a), 1.0), lin(b), scale)
+            colour_out = self._moss(nodes, links, colour_out, lin(hexstr))
         if dirt > 0.0 and colour_out is not None:
             colour_out = self._dirt(nodes, links, colour_out, dirt)
         if colour_out is not None:
@@ -131,6 +198,104 @@ class Mats:
         ramp.color_ramp.elements[1].color = c1
         links.new(noise.outputs["Fac"], ramp.inputs["Fac"])
         return ramp.outputs["Color"]
+
+    @staticmethod
+    def _height_ramp(nodes, links, c0, c1, span):
+        tc = nodes.new("ShaderNodeTexCoord")
+        sep = nodes.new("ShaderNodeSeparateXYZ")
+        links.new(tc.outputs["Object"], sep.inputs[0])
+        noise = nodes.new("ShaderNodeTexNoise")
+        noise.inputs["Scale"].default_value = 2.5
+        links.new(tc.outputs["Object"], noise.inputs["Vector"])
+        add = nodes.new("ShaderNodeMath")
+        add.operation = "MULTIPLY_ADD"
+        links.new(noise.outputs["Fac"], add.inputs[0])
+        add.inputs[1].default_value = 0.8
+        links.new(sep.outputs["Z"], add.inputs[2])
+        mr = nodes.new("ShaderNodeMapRange")
+        mr.inputs["From Min"].default_value = span[0] if isinstance(span, tuple) else 0.0
+        mr.inputs["From Max"].default_value = span[1] if isinstance(span, tuple) else span
+        links.new(add.outputs[0], mr.inputs["Value"])
+        ramp = nodes.new("ShaderNodeValToRGB")
+        ramp.color_ramp.elements[0].color = c0
+        ramp.color_ramp.elements[1].color = c1
+        links.new(mr.outputs["Result"], ramp.inputs["Fac"])
+        return ramp.outputs["Color"]
+
+    @staticmethod
+    def _speckle(nodes, links, colour_out, c, scale, threshold):
+        tc = nodes.new("ShaderNodeTexCoord")
+        vor = nodes.new("ShaderNodeTexVoronoi")
+        vor.inputs["Scale"].default_value = scale
+        links.new(tc.outputs["Object"], vor.inputs["Vector"])
+        ramp = nodes.new("ShaderNodeValToRGB")
+        ramp.color_ramp.interpolation = "EASE"
+        ramp.color_ramp.elements[0].position = 0.0
+        ramp.color_ramp.elements[0].color = (1, 1, 1, 1)
+        ramp.color_ramp.elements[1].position = 0.18
+        ramp.color_ramp.elements[1].color = (0, 0, 0, 1)
+        links.new(vor.outputs["Distance"], ramp.inputs["Fac"])
+        mix = nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        mix.blend_type = "MIX"
+        mul = nodes.new("ShaderNodeMath")
+        mul.operation = "MULTIPLY"
+        links.new(ramp.outputs["Color"], mul.inputs[0])
+        mul.inputs[1].default_value = 0.35
+        links.new(mul.outputs[0], mix.inputs["Factor"])
+        links.new(colour_out, mix.inputs[6])
+        mix.inputs[7].default_value = c
+        return mix.outputs[2]
+
+    @staticmethod
+    def _grain(nodes, links, ca, cb, scale):
+        tc = nodes.new("ShaderNodeTexCoord")
+        wave = nodes.new("ShaderNodeTexWave")
+        wave.wave_type = "BANDS"
+        wave.bands_direction = "Y"
+        wave.inputs["Scale"].default_value = scale
+        wave.inputs["Distortion"].default_value = 6.0
+        wave.inputs["Detail"].default_value = 3.0
+        links.new(tc.outputs["Object"], wave.inputs["Vector"])
+        ramp = nodes.new("ShaderNodeValToRGB")
+        ramp.color_ramp.elements[0].color = ca
+        ramp.color_ramp.elements[1].color = cb
+        links.new(wave.outputs["Fac"], ramp.inputs["Fac"])
+        return ramp.outputs["Color"]
+
+    @staticmethod
+    def _bark(nodes, links, ca, cb, scale):
+        tc = nodes.new("ShaderNodeTexCoord")
+        mp = nodes.new("ShaderNodeMapping")
+        mp.inputs["Scale"].default_value = (scale, scale, scale * 0.15)
+        links.new(tc.outputs["Object"], mp.inputs["Vector"])
+        noise = nodes.new("ShaderNodeTexNoise")
+        noise.inputs["Scale"].default_value = 1.0
+        noise.inputs["Detail"].default_value = 4.0
+        links.new(mp.outputs["Vector"], noise.inputs["Vector"])
+        ramp = nodes.new("ShaderNodeValToRGB")
+        ramp.color_ramp.elements[0].position = 0.35
+        ramp.color_ramp.elements[0].color = ca
+        ramp.color_ramp.elements[1].position = 0.65
+        ramp.color_ramp.elements[1].color = cb
+        links.new(noise.outputs["Fac"], ramp.inputs["Fac"])
+        return ramp.outputs["Color"]
+
+    @staticmethod
+    def _moss(nodes, links, colour_out, c):
+        geo = nodes.new("ShaderNodeNewGeometry")
+        sep = nodes.new("ShaderNodeSeparateXYZ")
+        links.new(geo.outputs["Normal"], sep.inputs[0])
+        mr = nodes.new("ShaderNodeMapRange")
+        mr.inputs["From Min"].default_value = 0.55
+        mr.inputs["From Max"].default_value = 0.85
+        links.new(sep.outputs["Z"], mr.inputs["Value"])
+        mix = nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        links.new(mr.outputs["Result"], mix.inputs["Factor"])
+        links.new(colour_out, mix.inputs[6])
+        mix.inputs[7].default_value = c
+        return mix.outputs[2]
 
     @staticmethod
     def _bands(nodes, links, ca, cb, scale, direction):
@@ -182,11 +347,11 @@ class Mats:
 class Model:
     """Collects parts: each is (object, pivot node name, Unity slot)."""
 
-    def __init__(self, name):
+    def __init__(self, name, origin=(0.0, 0.0, 0.0)):
         self.name = name
         self.parts = []
         self.nodes = OrderedDict()  # name -> (parent, unity local pos)
-        self.world = {"Body": Vector((0, 0, 0))}
+        self.world = {"Body": Vector(origin)}
         self.nobake = set()  # objects that keep their own UVs and a scene material (e.g. the scrolling track belt)
 
     def node(self, name, parent, pos):
@@ -408,6 +573,16 @@ def unity_matrix(pos, euler=None):
     return m
 
 
+class Group:
+    """Several props baked into one shared atlas (one material in Unity: static batching across all of them)."""
+
+    def __init__(self, name, models):
+        self.name = name
+        self.models = models
+        self.parts = [p for m in models for p in m.parts]
+        self.nobake = set().union(*[m.nobake for m in models]) if models else set()
+
+
 # ---------------------------------------------------------------------------------------------------------------- bake
 def _set_bake_target(mats, image):
     for m in mats:
@@ -423,7 +598,7 @@ def _set_bake_target(mats, image):
         nodes.active = n
 
 
-def bake(model, size=1024, ao_samples=64):
+def bake(model, size=1024, ao_samples=64, tex_dir=None):
     scene = bpy.context.scene
     scene.render.engine = "CYCLES"
     scene.cycles.device = "CPU"
@@ -431,7 +606,7 @@ def bake(model, size=1024, ao_samples=64):
     bg = scene.world.node_tree.nodes.get("Background")
     if bg is not None:
         bg.inputs["Color"].default_value = (1, 1, 1, 1)
-    scene.world.light_settings.distance = 1.2  # AO reach (m)
+    scene.world.light_settings.distance = getattr(model, "ao_distance", 1.2)  # AO reach (m)
 
     objs = [p[0] for p in model.parts if p[0] not in model.nobake]
     meshes = []
@@ -485,25 +660,27 @@ def bake(model, size=1024, ao_samples=64):
     rgb = np.clip(col * shade, 0, 1)
     smooth = np.clip(1.0 - out["rough"][:, :, :1], 0, 1)
     final = np.concatenate([rgb, smooth], axis=2)
-    os.makedirs(TEX_DIR, exist_ok=True)
+    tex_dir = tex_dir or TEX_DIR
+    os.makedirs(tex_dir, exist_ok=True)
     tex = bpy.data.images.new(f"T_{model.name}", size, size, alpha=True)
     tex.pixels[:] = final.ravel()
-    tex.filepath_raw = f"{TEX_DIR}/T_{model.name}.png"
+    tex.filepath_raw = f"{tex_dir}/T_{model.name}.png"
     tex.file_format = "PNG"
     tex.save()
     emit = np.clip(out["emit"][:, :, :3], 0, 1)
     em = bpy.data.images.new(f"T_{model.name}_E", size, size, alpha=False)
     em.pixels[:] = np.concatenate([emit, np.ones((size, size, 1), np.float32)], axis=2).ravel()
-    em.filepath_raw = f"{TEX_DIR}/T_{model.name}_E.png"
+    em.filepath_raw = f"{tex_dir}/T_{model.name}_E.png"
     em.file_format = "PNG"
     em.save()
     return tex, em
 
 
 # ---------------------------------------------------------------------------------------------------------------- export
-def export(model):
+def export(model, folder=None):
     """Mesh pack: nodes (pivots) + one mesh per (node, slot). Vertices are pivot-local, Unity axes."""
-    os.makedirs(MODEL_DIR, exist_ok=True)
+    folder = folder or MODEL_DIR
+    os.makedirs(folder, exist_ok=True)
     groups = OrderedDict()
     for obj, node, slot in model.parts:
         groups.setdefault((node, slot), []).append(obj)
@@ -569,9 +746,9 @@ def export(model):
         blob.extend(struct.pack(f"<{len(tris)}i", *tris))
         total += len(verts)
         print(f"[LBW] mesh {node}_{slot}: {len(verts)} verts, {len(tris) // 3} tris")
-    with open(f"{MODEL_DIR}/{model.name}.bytes", "wb") as f:
+    with open(f"{folder}/{model.name}.bytes", "wb") as f:
         f.write(blob)
-    print(f"[LBW] {model.name}: {len(groups)} meshes, {total} vertices -> {MODEL_DIR}/{model.name}.bytes")
+    print(f"[LBW] {model.name}: {len(groups)} meshes, {total} vertices -> {folder}/{model.name}.bytes")
     return total
 
 
@@ -607,7 +784,7 @@ def preview(model, tex, em, tints, path, views):
         obj.data.materials.clear()
         obj.data.materials.append(final[slot])
     # Ground, sun, sky.
-    bpy.ops.mesh.primitive_plane_add(size=60, location=(0, 0, 0))
+    bpy.ops.mesh.primitive_plane_add(size=400, location=(0, 0, 0))
     ground = bpy.context.active_object
     gm = bpy.data.materials.new("Ground")
     gm.node_tree.nodes["Principled BSDF"].inputs["Base Color"].default_value = lin("#F2D99A")
@@ -687,3 +864,55 @@ def track_belt(name, length, height, width, center, thick=0.09, cleat_spacing=0.
     obj = _link(name, bm)
     _bake_modifiers(obj, None)
     return _place(obj, center)
+
+
+def blob(name, balls, center, resolution=0.22, target=400, noise=0.0):
+    """Puffy merged shape from metaballs (tree canopies, bushes), decimated to stay light. balls: [((x,y,z), r)] Unity."""
+    mb = bpy.data.metaballs.new(name)
+    mb.resolution = resolution
+    mb.render_resolution = resolution
+    mobj = bpy.data.objects.new(name + "_mb", mb)
+    bpy.context.scene.collection.objects.link(mobj)
+    for (x, y, z), r in balls:
+        e = mb.elements.new(type="BALL")
+        e.co = U(x, y, z)
+        e.radius = r
+        e.stiffness = 2.0
+    bpy.context.view_layer.update()
+    dg = bpy.context.evaluated_depsgraph_get()
+    me = bpy.data.meshes.new_from_object(mobj.evaluated_get(dg), depsgraph=dg)
+    bpy.data.objects.remove(mobj)
+    bpy.data.metaballs.remove(mb)
+    obj = bpy.data.objects.new(name, me)
+    bpy.context.scene.collection.objects.link(obj)
+    for p in me.polygons:
+        p.use_smooth = True
+    if noise > 0:
+        tex = bpy.data.textures.new(name + "_n", "CLOUDS")
+        tex.noise_scale = 0.6
+        d = obj.modifiers.new("Disp", "DISPLACE")
+        d.texture = tex
+        d.strength = noise
+        d.mid_level = 0.5
+    dec = obj.modifiers.new("Dec", "DECIMATE")
+    dec.ratio = min(1.0, target / max(1, len(me.polygons)))
+    _bake_modifiers(obj, None, weighted=False)
+    return _place(obj, center)
+
+
+def rock(name, radius, center, scale=(1, 1, 1), subdiv=2, noise=0.25, euler=None, seed=1):
+    """Lumpy rock: icosphere pushed around by noise, softly shaded."""
+    bm = bmesh.new()
+    bmesh.ops.create_icosphere(bm, subdivisions=subdiv, radius=radius)
+    import random
+    rnd = random.Random(seed)
+    offs = [Vector((rnd.uniform(-1, 1), rnd.uniform(-1, 1), rnd.uniform(-1, 1))) for _ in range(5)]
+    sx, sy, sz = scale
+    for v in bm.verts:
+        n = v.co.normalized()
+        bump = sum(max(0.0, n.dot(o.normalized())) ** 3 * 0.5 for o in offs) - 0.3
+        v.co = n * radius * (1.0 + noise * bump)
+        v.co = Vector((v.co.x * sx, v.co.y * sz, v.co.z * sy))
+    obj = _link(name, bm)
+    _bake_modifiers(obj, None, weighted=False)
+    return _place(obj, center, euler)

@@ -34,7 +34,7 @@ namespace LittleBuildersWorld.EditorTools
             Save(WaterTower(), "WaterTower");
             Save(Windmill(), "Windmill");
             foreach (var (n, wall, roof) in new[] { ("TownHouseA", "#FFE3B3", "#E63946"), ("TownHouseB", "#BDE0FE", "#457B9D"), ("TownHouseC", "#FFC8DD", "#8E7DBE"), ("TownHouseD", "#CAFFBF", "#F4A261") })
-                Save(TownHouse(wall, roof), n);
+                Save(TownHouse(n, wall, roof), n);
             Save(Hopper(), "Hopper");
             Save(BrickPallet(), "BrickPallet");
             Save(Skip(), "Skip");
@@ -73,6 +73,14 @@ namespace LittleBuildersWorld.EditorTools
 
         private static GameObject Root(string name) => new GameObject(name);
 
+        /// <summary>Smooth textured Blender model (Tools/blender/build_env.sh) if built; false = use the procedural parts.</summary>
+        private static bool Model(GameObject r, string prop, string group)
+        {
+            if (!BlenderModels.HasProp(prop, group)) return false;
+            BlenderModels.BuildProp(prop, group, r.transform);
+            return true;
+        }
+
         private static void BoxCol(GameObject go, Vector3 centre, Vector3 size)
         {
             var c = go.AddComponent<BoxCollider>();
@@ -84,14 +92,17 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject TreeRound()
         {
             GameObject r = Root("TreeRound");
-            Transform sway = A.Pivot("Sway", r.transform, Vector3.zero);
-            A.Part("Trunk", sway, A.Disc(0.28f, 2.2f, 0.1f, 12), A.DarkWood, Vector3.zero);
-            A.Part("Leaves", sway, A.Sphere(1.6f), A.Leaf, new Vector3(0f, 3.1f, 0f), null, new Vector3(1f, 0.95f, 1f));
-            A.Part("Leaves2", sway, A.Sphere(1.05f), A.LeafLight, new Vector3(0.75f, 3.9f, 0.3f));
-            A.Part("Leaves3", sway, A.Sphere(0.9f), A.LeafLight, new Vector3(-0.8f, 3.6f, -0.4f));
-            A.Part("Leaves4", sway, A.Sphere(0.85f), A.Leaf, new Vector3(0.1f, 3.3f, 1.0f));
-            A.Part("Apple", sway, A.Sphere(0.14f), A.Colour("Apple", "#FF595E", 0.5f), new Vector3(0.9f, 2.9f, 1.05f));
-            A.Part("Apple", sway, A.Sphere(0.14f), A.Colour("Apple", "#FF595E", 0.5f), new Vector3(-1.1f, 3.2f, 0.7f));
+            if (!Model(r, "TreeRound", "Nature"))
+            {
+                Transform sway = A.Pivot("Sway", r.transform, Vector3.zero);
+                A.Part("Trunk", sway, A.Disc(0.28f, 2.2f, 0.1f, 12), A.DarkWood, Vector3.zero);
+                A.Part("Leaves", sway, A.Sphere(1.6f), A.Leaf, new Vector3(0f, 3.1f, 0f), null, new Vector3(1f, 0.95f, 1f));
+                A.Part("Leaves2", sway, A.Sphere(1.05f), A.LeafLight, new Vector3(0.75f, 3.9f, 0.3f));
+                A.Part("Leaves3", sway, A.Sphere(0.9f), A.LeafLight, new Vector3(-0.8f, 3.6f, -0.4f));
+                A.Part("Leaves4", sway, A.Sphere(0.85f), A.Leaf, new Vector3(0.1f, 3.3f, 1.0f));
+                A.Part("Apple", sway, A.Sphere(0.14f), A.Colour("Apple", "#FF595E", 0.5f), new Vector3(0.9f, 2.9f, 1.05f));
+                A.Part("Apple", sway, A.Sphere(0.14f), A.Colour("Apple", "#FF595E", 0.5f), new Vector3(-1.1f, 3.2f, 0.7f));
+            }
             var c = r.AddComponent<CapsuleCollider>();
             c.center = new Vector3(0f, 1.2f, 0f);
             c.radius = 0.45f;
@@ -102,10 +113,13 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject TreePine()
         {
             GameObject r = Root("TreePine");
-            Transform sway = A.Pivot("Sway", r.transform, Vector3.zero);
-            A.Part("Trunk", sway, A.Disc(0.24f, 1.2f, 0.08f, 12), A.DarkWood, Vector3.zero);
-            for (int i = 0; i < 3; i++)
-                A.Part("Tier", sway, A.Cone(1.7f - i * 0.4f, 2.0f), i % 2 == 0 ? A.Leaf : A.LeafLight, new Vector3(0f, 1.0f + i * 1.1f, 0f));
+            if (!Model(r, "TreePine", "Nature"))
+            {
+                Transform sway = A.Pivot("Sway", r.transform, Vector3.zero);
+                A.Part("Trunk", sway, A.Disc(0.24f, 1.2f, 0.08f, 12), A.DarkWood, Vector3.zero);
+                for (int i = 0; i < 3; i++)
+                    A.Part("Tier", sway, A.Cone(1.7f - i * 0.4f, 2.0f), i % 2 == 0 ? A.Leaf : A.LeafLight, new Vector3(0f, 1.0f + i * 1.1f, 0f));
+            }
             var c = r.AddComponent<CapsuleCollider>();
             c.center = new Vector3(0f, 1.2f, 0f);
             c.radius = 0.45f;
@@ -116,10 +130,13 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Bush()
         {
             GameObject r = Root("Bush");
-            A.Part("A", r.transform, A.Sphere(0.8f), A.Leaf, new Vector3(0f, 0.5f, 0f), null, new Vector3(1.2f, 0.8f, 1f));
-            A.Part("B", r.transform, A.Sphere(0.55f), A.LeafLight, new Vector3(0.6f, 0.45f, 0.2f));
-            A.Part("Flower", r.transform, A.Sphere(0.14f), A.Colour("FlowerPink", "#FF8FC7"), new Vector3(-0.3f, 1.05f, 0.5f));
-            A.Part("Flower2", r.transform, A.Sphere(0.12f), A.Colour("FlowerYellow", "#FFE066"), new Vector3(0.5f, 0.95f, 0.5f));
+            if (!Model(r, "Bush", "Nature"))
+            {
+                A.Part("A", r.transform, A.Sphere(0.8f), A.Leaf, new Vector3(0f, 0.5f, 0f), null, new Vector3(1.2f, 0.8f, 1f));
+                A.Part("B", r.transform, A.Sphere(0.55f), A.LeafLight, new Vector3(0.6f, 0.45f, 0.2f));
+                A.Part("Flower", r.transform, A.Sphere(0.14f), A.Colour("FlowerPink", "#FF8FC7"), new Vector3(-0.3f, 1.05f, 0.5f));
+                A.Part("Flower2", r.transform, A.Sphere(0.12f), A.Colour("FlowerYellow", "#FFE066"), new Vector3(0.5f, 0.95f, 0.5f));
+            }
             return r;
         }
 
@@ -137,10 +154,13 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Fence()
         {
             GameObject r = Root("Fence");
-            for (int i = 0; i < 3; i++)
-                A.Part("Post", r.transform, A.Box(0.22f, 1.2f, 0.22f, 0.08f), A.White, new Vector3(-2f + i * 2f, 0.6f, 0f));
-            A.Part("Rail", r.transform, A.Box(4.2f, 0.18f, 0.1f, 0.05f), A.White, new Vector3(0f, 0.85f, 0f));
-            A.Part("Rail2", r.transform, A.Box(4.2f, 0.18f, 0.1f, 0.05f), A.White, new Vector3(0f, 0.45f, 0f));
+            if (!Model(r, "Fence", "Street"))
+            {
+                for (int i = 0; i < 3; i++)
+                    A.Part("Post", r.transform, A.Box(0.22f, 1.2f, 0.22f, 0.08f), A.White, new Vector3(-2f + i * 2f, 0.6f, 0f));
+                A.Part("Rail", r.transform, A.Box(4.2f, 0.18f, 0.1f, 0.05f), A.White, new Vector3(0f, 0.85f, 0f));
+                A.Part("Rail2", r.transform, A.Box(4.2f, 0.18f, 0.1f, 0.05f), A.White, new Vector3(0f, 0.45f, 0f));
+            }
             // Taller than it looks: an invisible wall vehicles slide along and can never ride up onto.
             BoxCol(r, new Vector3(0f, 1.5f, 0f), new Vector3(4.2f, 3f, 0.5f));
             return r;
@@ -159,24 +179,30 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Lamp()
         {
             GameObject r = Root("Lamp");
-            A.Part("Base", r.transform, A.Disc(0.22f, 0.45f, 0.06f, 12), A.DarkSteel, Vector3.zero);
-            A.Part("Pole", r.transform, A.Disc(0.1f, 3.6f, 0.04f, 10), A.DarkSteel, Vector3.zero);
-            A.Part("Collar", r.transform, A.Disc(0.17f, 0.12f, 0.04f, 12), A.DarkSteel, new Vector3(0f, 3.45f, 0f));
-            A.Part("Head", r.transform, A.Sphere(0.32f), A.Lit("LampGlow", "#FFF3B0", 0.8f, null, null, 0.5f), new Vector3(0f, 3.75f, 0f));
-            A.Part("Cap", r.transform, A.Dome(0.3f, 0.18f), A.DarkSteel, new Vector3(0f, 3.98f, 0f));
+            if (!Model(r, "Lamp", "Street"))
+            {
+                A.Part("Base", r.transform, A.Disc(0.22f, 0.45f, 0.06f, 12), A.DarkSteel, Vector3.zero);
+                A.Part("Pole", r.transform, A.Disc(0.1f, 3.6f, 0.04f, 10), A.DarkSteel, Vector3.zero);
+                A.Part("Collar", r.transform, A.Disc(0.17f, 0.12f, 0.04f, 12), A.DarkSteel, new Vector3(0f, 3.45f, 0f));
+                A.Part("Head", r.transform, A.Sphere(0.32f), A.Lit("LampGlow", "#FFF3B0", 0.8f, null, null, 0.5f), new Vector3(0f, 3.75f, 0f));
+                A.Part("Cap", r.transform, A.Dome(0.3f, 0.18f), A.DarkSteel, new Vector3(0f, 3.98f, 0f));
+            }
             return r;
         }
 
         private static GameObject SignPost()
         {
             GameObject r = Root("SignPost");
-            A.Part("Post", r.transform, A.Box(0.18f, 2.6f, 0.18f, 0.06f), A.Wood, new Vector3(0f, 1.3f, 0f));
-            A.Part("Board", r.transform, A.Box(2.0f, 1.2f, 0.14f, 0.12f), A.White, new Vector3(0f, 2.6f, 0f));
+            if (!Model(r, "SignPost", "Street"))
+            {
+                A.Part("Post", r.transform, A.Box(0.18f, 2.6f, 0.18f, 0.06f), A.Wood, new Vector3(0f, 1.3f, 0f));
+                A.Part("Board", r.transform, A.Box(2.0f, 1.2f, 0.14f, 0.12f), A.White, new Vector3(0f, 2.6f, 0f));
+                A.Part("Arrow", r.transform, A.Box(0.6f, 0.22f, 0.16f, 0.06f), A.Colour("SignArrow", "#1982C4"), new Vector3(0.55f, 2.6f, 0f));
+                A.Part("ArrowHead", r.transform, A.Box(0.32f, 0.32f, 0.16f, 0.06f), A.Colour("SignArrow", "#1982C4"), new Vector3(0.85f, 2.6f, 0f), new Vector3(0f, 0f, 45f));
+            }
             // Icon quad is assigned per instance by the town builder (house / road / slide pictures).
             GameObject icon = A.Part("Icon", r.transform, A.UprightQuad(1.05f, 1.05f), A.White, new Vector3(-0.35f, 2.6f, -0.08f));
             GameObject icon2 = A.Part("IconBack", r.transform, A.UprightQuad(1.05f, 1.05f), A.White, new Vector3(-0.35f, 2.6f, 0.08f), new Vector3(0f, 180f, 0f));
-            A.Part("Arrow", r.transform, A.Box(0.6f, 0.22f, 0.16f, 0.06f), A.Colour("SignArrow", "#1982C4"), new Vector3(0.55f, 2.6f, 0f));
-            A.Part("ArrowHead", r.transform, A.Box(0.32f, 0.32f, 0.16f, 0.06f), A.Colour("SignArrow", "#1982C4"), new Vector3(0.85f, 2.6f, 0f), new Vector3(0f, 0f, 45f));
             A.NoShadows(icon);
             A.NoShadows(icon2);
             BoxCol(r, new Vector3(0f, 1.3f, 0f), new Vector3(0.3f, 2.6f, 0.3f));
@@ -186,11 +212,14 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Barrier()
         {
             GameObject r = Root("Barrier");
-            foreach (float x in new[] { -1.4f, 1.4f })
-                A.Part("Leg", r.transform, A.Box(0.15f, 1.0f, 0.5f, 0.05f), A.White, new Vector3(x, 0.5f, 0f));
-            for (int i = 0; i < 5; i++)
-                A.Part("Stripe", r.transform, A.Box(0.6f, 0.4f, 0.12f, 0.04f), i % 2 == 0 ? A.ConeOrange : A.White, new Vector3(-1.2f + i * 0.6f, 0.9f, 0f));
-            A.Part("Light", r.transform, A.Sphere(0.14f), A.Beacon, new Vector3(1.4f, 1.15f, 0f));
+            if (!Model(r, "Barrier", "Street"))
+            {
+                foreach (float x in new[] { -1.4f, 1.4f })
+                    A.Part("Leg", r.transform, A.Box(0.15f, 1.0f, 0.5f, 0.05f), A.White, new Vector3(x, 0.5f, 0f));
+                for (int i = 0; i < 5; i++)
+                    A.Part("Stripe", r.transform, A.Box(0.6f, 0.4f, 0.12f, 0.04f), i % 2 == 0 ? A.ConeOrange : A.White, new Vector3(-1.2f + i * 0.6f, 0.9f, 0f));
+                A.Part("Light", r.transform, A.Sphere(0.14f), A.Beacon, new Vector3(1.4f, 1.15f, 0f));
+            }
             return r;
         }
 
@@ -204,17 +233,20 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Shed()
         {
             GameObject r = Root("Shed");
-            A.Part("Walls", r.transform, A.Box(6f, 3.2f, 4.5f, 0.3f), A.Colour("ShedWall", "#FFE3B3", 0.2f), new Vector3(0f, 1.6f, 0f));
-            A.Part("Roof", r.transform, A.Box(6.6f, 0.4f, 5.1f, 0.15f), A.Colour("ShedRoof", "#1982C4", 0.3f), new Vector3(0f, 3.4f, 0f));
-            A.Part("Door", r.transform, A.Box(1.3f, 2.2f, 0.1f, 0.06f), A.Wood, new Vector3(-1.2f, 1.1f, -2.27f));
-            A.Part("Window", r.transform, A.Box(1.4f, 1f, 0.08f, 0.06f), A.Glass, new Vector3(1.3f, 1.9f, -2.27f));
-            A.Part("Sign", r.transform, A.Box(2.6f, 0.7f, 0.1f, 0.1f), A.Colour("SignYellow", "#FFC93C"), new Vector3(0f, 2.9f, -2.3f));
-            A.Part("SignHat", r.transform, A.Dome(0.42f, 0.3f), A.Colour("HardHat_FF9F1C", "#FF9F1C", 0.5f), new Vector3(0f, 2.72f, -2.4f), new Vector3(-90f, 0f, 0f), new Vector3(1f, 0.35f, 1f));
-            A.Part("DoorFrame", r.transform, A.Box(1.5f, 2.35f, 0.08f, 0.05f), A.White, new Vector3(-1.2f, 1.15f, -2.25f));
-            A.Part("Knob", r.transform, A.Sphere(0.08f), A.Colour("Gold", "#FFC93C", 0.6f), new Vector3(-0.75f, 1.1f, -2.35f));
-            A.Part("WindowFrame", r.transform, A.Box(1.6f, 1.2f, 0.06f, 0.05f), A.White, new Vector3(1.3f, 1.9f, -2.25f));
-            foreach (float x in new[] { -3.0f, 3.0f })
-                A.Part("Gutter", r.transform, A.Box(0.12f, 3.2f, 0.12f, 0.04f), A.Colour("ShedRoof", "#1982C4", 0.3f), new Vector3(x, 1.6f, -2.2f));
+            if (!Model(r, "Shed", "Buildings"))
+            {
+                A.Part("Walls", r.transform, A.Box(6f, 3.2f, 4.5f, 0.3f), A.Colour("ShedWall", "#FFE3B3", 0.2f), new Vector3(0f, 1.6f, 0f));
+                A.Part("Roof", r.transform, A.Box(6.6f, 0.4f, 5.1f, 0.15f), A.Colour("ShedRoof", "#1982C4", 0.3f), new Vector3(0f, 3.4f, 0f));
+                A.Part("Door", r.transform, A.Box(1.3f, 2.2f, 0.1f, 0.06f), A.Wood, new Vector3(-1.2f, 1.1f, -2.27f));
+                A.Part("Window", r.transform, A.Box(1.4f, 1f, 0.08f, 0.06f), A.Glass, new Vector3(1.3f, 1.9f, -2.27f));
+                A.Part("Sign", r.transform, A.Box(2.6f, 0.7f, 0.1f, 0.1f), A.Colour("SignYellow", "#FFC93C"), new Vector3(0f, 2.9f, -2.3f));
+                A.Part("SignHat", r.transform, A.Dome(0.42f, 0.3f), A.Colour("HardHat_FF9F1C", "#FF9F1C", 0.5f), new Vector3(0f, 2.72f, -2.4f), new Vector3(-90f, 0f, 0f), new Vector3(1f, 0.35f, 1f));
+                A.Part("DoorFrame", r.transform, A.Box(1.5f, 2.35f, 0.08f, 0.05f), A.White, new Vector3(-1.2f, 1.15f, -2.25f));
+                A.Part("Knob", r.transform, A.Sphere(0.08f), A.Colour("Gold", "#FFC93C", 0.6f), new Vector3(-0.75f, 1.1f, -2.35f));
+                A.Part("WindowFrame", r.transform, A.Box(1.6f, 1.2f, 0.06f, 0.05f), A.White, new Vector3(1.3f, 1.9f, -2.25f));
+                foreach (float x in new[] { -3.0f, 3.0f })
+                    A.Part("Gutter", r.transform, A.Box(0.12f, 3.2f, 0.12f, 0.04f), A.Colour("ShedRoof", "#1982C4", 0.3f), new Vector3(x, 1.6f, -2.2f));
+            }
             BoxCol(r, new Vector3(0f, 1.7f, 0f), new Vector3(6f, 3.4f, 4.5f));
             return Building(r);
         }
@@ -222,24 +254,27 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject WaterTower()
         {
             GameObject r = Root("WaterTower");
-            for (int i = 0; i < 4; i++)
+            if (!Model(r, "WaterTower", "Buildings"))
             {
-                float a = i * 90f * Mathf.Deg2Rad;
-                A.Part("Leg", r.transform, A.Box(0.3f, 7f, 0.3f, 0.08f), A.DarkSteel, new Vector3(Mathf.Cos(a) * 1.8f, 3.5f, Mathf.Sin(a) * 1.8f));
+                for (int i = 0; i < 4; i++)
+                {
+                    float a = i * 90f * Mathf.Deg2Rad;
+                    A.Part("Leg", r.transform, A.Box(0.3f, 7f, 0.3f, 0.08f), A.DarkSteel, new Vector3(Mathf.Cos(a) * 1.8f, 3.5f, Mathf.Sin(a) * 1.8f));
+                }
+                for (int i = 0; i < 4; i++)
+                {
+                    float a0 = i * 90f * Mathf.Deg2Rad, a1 = (i + 1) * 90f * Mathf.Deg2Rad;
+                    Vector3 p0 = new Vector3(Mathf.Cos(a0) * 1.8f, 0f, Mathf.Sin(a0) * 1.8f), p1 = new Vector3(Mathf.Cos(a1) * 1.8f, 0f, Mathf.Sin(a1) * 1.8f);
+                    Vector3 d = p1 - p0;
+                    float yaw = -Mathf.Atan2(d.z, d.x) * Mathf.Rad2Deg;
+                    foreach (float y in new[] { 2.4f, 4.8f })
+                        A.Part("Brace", r.transform, A.Box(d.magnitude, 0.14f, 0.14f, 0.04f), A.Steel, (p0 + p1) * 0.5f + Vector3.up * y, new Vector3(0f, yaw, 0f));
+                }
+                A.Part("Tank", r.transform, A.Disc(2.6f, 3.2f, 0.6f, 24), A.Colour("TowerTank", "#8AD8FF", 0.4f), new Vector3(0f, 7f, 0f));
+                A.Part("Drop", r.transform, A.Sphere(0.55f), A.White, new Vector3(0f, 8.6f, -2.45f), null, new Vector3(0.8f, 1f, 0.3f));
+                A.Part("Cap", r.transform, A.Dome(2.7f, 1.2f), A.Colour("TowerCap", "#FF595E", 0.3f), new Vector3(0f, 10.2f, 0f));
+                A.Part("Band", r.transform, A.Disc(2.65f, 0.4f, 0.1f, 24), A.White, new Vector3(0f, 8.4f, 0f));
             }
-            for (int i = 0; i < 4; i++)
-            {
-                float a0 = i * 90f * Mathf.Deg2Rad, a1 = (i + 1) * 90f * Mathf.Deg2Rad;
-                Vector3 p0 = new Vector3(Mathf.Cos(a0) * 1.8f, 0f, Mathf.Sin(a0) * 1.8f), p1 = new Vector3(Mathf.Cos(a1) * 1.8f, 0f, Mathf.Sin(a1) * 1.8f);
-                Vector3 d = p1 - p0;
-                float yaw = -Mathf.Atan2(d.z, d.x) * Mathf.Rad2Deg;
-                foreach (float y in new[] { 2.4f, 4.8f })
-                    A.Part("Brace", r.transform, A.Box(d.magnitude, 0.14f, 0.14f, 0.04f), A.Steel, (p0 + p1) * 0.5f + Vector3.up * y, new Vector3(0f, yaw, 0f));
-            }
-            A.Part("Tank", r.transform, A.Disc(2.6f, 3.2f, 0.6f, 24), A.Colour("TowerTank", "#8AD8FF", 0.4f), new Vector3(0f, 7f, 0f));
-            A.Part("Drop", r.transform, A.Sphere(0.55f), A.White, new Vector3(0f, 8.6f, -2.45f), null, new Vector3(0.8f, 1f, 0.3f));
-            A.Part("Cap", r.transform, A.Dome(2.7f, 1.2f), A.Colour("TowerCap", "#FF595E", 0.3f), new Vector3(0f, 10.2f, 0f));
-            A.Part("Band", r.transform, A.Disc(2.65f, 0.4f, 0.1f, 24), A.White, new Vector3(0f, 8.4f, 0f));
             BoxCol(r, new Vector3(0f, 3.5f, 0f), new Vector3(4f, 7f, 4f));
             return Building(r);
         }
@@ -247,44 +282,50 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Windmill()
         {
             GameObject r = Root("Windmill");
-            A.Part("Tower", r.transform, A.Cone(3.2f, 12f), A.Colour("MillWall", "#FFF1E6", 0.2f), Vector3.zero);
-            A.Part("Cap", r.transform, A.Dome(1.6f, 1.6f), A.RoofRed, new Vector3(0f, 9.6f, 0f));
-            A.Part("Door", r.transform, A.Box(1.2f, 2f, 0.2f, 0.1f), A.Wood, new Vector3(0f, 1f, -2.9f));
-            Transform hub = A.Pivot("Blades", r.transform, new Vector3(0f, 9.8f, -1.7f));
-            A.Part("Hub", hub, A.Sphere(0.45f), A.DarkWood, Vector3.zero);
-            Material sail = A.Colour("MillSail", "#FF595E", 0.3f);
-            for (int i = 0; i < 4; i++)
+            if (!Model(r, "Windmill", "Buildings"))
             {
-                Quaternion q = Quaternion.Euler(0f, 0f, i * 90f);
-                A.Part("Spar", hub, A.Box(0.22f, 5.4f, 0.16f, 0.06f), A.DarkWood, q * new Vector3(0f, 2.9f, 0f), new Vector3(0f, 0f, i * 90f));
-                A.Part("Sail", hub, A.Box(1.0f, 3.8f, 0.08f, 0.05f), i % 2 == 0 ? sail : A.White, q * new Vector3(0.62f, 3.4f, 0.06f), new Vector3(0f, 0f, i * 90f));
+                A.Part("Tower", r.transform, A.Cone(3.2f, 12f), A.Colour("MillWall", "#FFF1E6", 0.2f), Vector3.zero);
+                A.Part("Cap", r.transform, A.Dome(1.6f, 1.6f), A.RoofRed, new Vector3(0f, 9.6f, 0f));
+                A.Part("Door", r.transform, A.Box(1.2f, 2f, 0.2f, 0.1f), A.Wood, new Vector3(0f, 1f, -2.9f));
+                Transform hub = A.Pivot("Blades", r.transform, new Vector3(0f, 9.8f, -1.7f));
+                A.Part("Hub", hub, A.Sphere(0.45f), A.DarkWood, Vector3.zero);
+                Material sail = A.Colour("MillSail", "#FF595E", 0.3f);
+                for (int i = 0; i < 4; i++)
+                {
+                    Quaternion q = Quaternion.Euler(0f, 0f, i * 90f);
+                    A.Part("Spar", hub, A.Box(0.22f, 5.4f, 0.16f, 0.06f), A.DarkWood, q * new Vector3(0f, 2.9f, 0f), new Vector3(0f, 0f, i * 90f));
+                    A.Part("Sail", hub, A.Box(1.0f, 3.8f, 0.08f, 0.05f), i % 2 == 0 ? sail : A.White, q * new Vector3(0.62f, 3.4f, 0.06f), new Vector3(0f, 0f, i * 90f));
+                }
+                foreach (float y in new[] { 4.2f, 7.0f })
+                {
+                    float rad = 3.2f * (1f - y / 12f);
+                    A.Part("Window", r.transform, A.Box(0.7f, 0.9f, 0.2f, 0.12f), A.Glass, new Vector3(0f, y, -rad + 0.02f), new Vector3(-15f, 0f, 0f));
+                }
+                A.Part("Balcony", r.transform, A.Disc(2.1f, 0.15f, 0.05f, 24), A.DarkWood, new Vector3(0f, 8.2f, 0f));
             }
-            foreach (float y in new[] { 4.2f, 7.0f })
-            {
-                float rad = 3.2f * (1f - y / 12f);
-                A.Part("Window", r.transform, A.Box(0.7f, 0.9f, 0.2f, 0.12f), A.Glass, new Vector3(0f, y, -rad + 0.02f), new Vector3(-15f, 0f, 0f));
-            }
-            A.Part("Balcony", r.transform, A.Disc(2.1f, 0.15f, 0.05f, 24), A.DarkWood, new Vector3(0f, 8.2f, 0f));
             BoxCol(r, new Vector3(0f, 5f, 0f), new Vector3(4.5f, 10f, 4.5f));
             return Building(r);
         }
 
-        private static GameObject TownHouse(string wall, string roof)
+        private static GameObject TownHouse(string prop, string wall, string roof)
         {
             GameObject r = Root("TownHouse");
-            A.Part("Walls", r.transform, A.Box(7f, 4f, 6f, 0.35f), A.Colour("HouseWall" + wall.Substring(1), wall, 0.2f), new Vector3(0f, 2f, 0f));
-            Material roofMat = A.Colour("HouseRoof" + roof.Substring(1), roof, 0.3f);
-            A.Part("RoofL", r.transform, A.Box(7.6f, 0.4f, 4.4f, 0.15f), roofMat, new Vector3(0f, 5.1f, -1.4f), new Vector3(-35f, 0f, 0f));
-            A.Part("RoofR", r.transform, A.Box(7.6f, 0.4f, 4.4f, 0.15f), roofMat, new Vector3(0f, 5.1f, 1.4f), new Vector3(35f, 0f, 0f));
-            A.Part("Door", r.transform, A.Box(1.3f, 2.2f, 0.12f, 0.08f), A.Wood, new Vector3(0f, 1.1f, -3.02f));
-            A.Part("DoorFrame", r.transform, A.Box(1.55f, 2.4f, 0.08f, 0.06f), A.White, new Vector3(0f, 1.2f, -2.99f));
-            A.Part("Knob", r.transform, A.Sphere(0.08f), A.Colour("Gold", "#FFC93C", 0.6f), new Vector3(0.4f, 1.1f, -3.1f));
-            A.Part("Step", r.transform, A.Box(1.9f, 0.2f, 0.7f, 0.06f), A.Concrete, new Vector3(0f, 0.1f, -3.3f));
-            foreach (float x in new[] { -2.3f, 2.3f })
-                Window(r.transform, new Vector3(x, 2.4f, -3.0f), 0f, true);
-            foreach (float side in new[] { -1f, 1f })
-                Window(r.transform, new Vector3(side * 3.5f, 2.4f, 0f), -side * 90f, false);
-            A.Part("Chimney", r.transform, A.Box(0.7f, 1.6f, 0.7f, 0.1f), A.Brick, new Vector3(2.2f, 5.8f, 1.2f));
+            if (!Model(r, prop, "Buildings"))
+            {
+                A.Part("Walls", r.transform, A.Box(7f, 4f, 6f, 0.35f), A.Colour("HouseWall" + wall.Substring(1), wall, 0.2f), new Vector3(0f, 2f, 0f));
+                Material roofMat = A.Colour("HouseRoof" + roof.Substring(1), roof, 0.3f);
+                A.Part("RoofL", r.transform, A.Box(7.6f, 0.4f, 4.4f, 0.15f), roofMat, new Vector3(0f, 5.1f, -1.4f), new Vector3(-35f, 0f, 0f));
+                A.Part("RoofR", r.transform, A.Box(7.6f, 0.4f, 4.4f, 0.15f), roofMat, new Vector3(0f, 5.1f, 1.4f), new Vector3(35f, 0f, 0f));
+                A.Part("Door", r.transform, A.Box(1.3f, 2.2f, 0.12f, 0.08f), A.Wood, new Vector3(0f, 1.1f, -3.02f));
+                A.Part("DoorFrame", r.transform, A.Box(1.55f, 2.4f, 0.08f, 0.06f), A.White, new Vector3(0f, 1.2f, -2.99f));
+                A.Part("Knob", r.transform, A.Sphere(0.08f), A.Colour("Gold", "#FFC93C", 0.6f), new Vector3(0.4f, 1.1f, -3.1f));
+                A.Part("Step", r.transform, A.Box(1.9f, 0.2f, 0.7f, 0.06f), A.Concrete, new Vector3(0f, 0.1f, -3.3f));
+                foreach (float x in new[] { -2.3f, 2.3f })
+                    Window(r.transform, new Vector3(x, 2.4f, -3.0f), 0f, true);
+                foreach (float side in new[] { -1f, 1f })
+                    Window(r.transform, new Vector3(side * 3.5f, 2.4f, 0f), -side * 90f, false);
+                A.Part("Chimney", r.transform, A.Box(0.7f, 1.6f, 0.7f, 0.1f), A.Brick, new Vector3(2.2f, 5.8f, 1.2f));
+            }
             BoxCol(r, new Vector3(0f, 2.5f, 0f), new Vector3(7f, 5f, 6f));
             return Building(r);
         }
@@ -411,7 +452,8 @@ namespace LittleBuildersWorld.EditorTools
         private static GameObject Debris(string kind)
         {
             GameObject r = Root("Debris" + kind);
-            float radius = 0.8f;
+            float radius = kind == "Log" ? 1f : kind == "Crate" ? 0.75f : kind == "Cone" ? 0.55f : 0.8f;
+            if (!Model(r, "Debris" + kind, kind == "Rock" || kind == "Log" ? "Nature" : "Street"))
             switch (kind)
             {
                 case "Rock":
